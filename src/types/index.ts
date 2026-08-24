@@ -1,0 +1,153 @@
+export type FacilityTier = "SubCentre" | "PHC" | "RuralHospital" | "DistrictHospital"
+
+export interface Facility {
+  id: string
+  name: string
+  tier: FacilityTier
+  district: string
+  state: string
+  distanceKm?: number
+}
+
+export type StaffRole = "Doctor" | "Specialist" | "CHO" | "FacilityAdmin"
+
+export type VerificationStatus = "Pending" | "Verified" | "Rejected"
+
+export interface Specialty {
+  id: string
+  label: string
+}
+
+export interface StaffUser {
+  id: string
+  name: string
+  phone: string
+  email: string
+  role: StaffRole
+  specialtyId?: string
+  facilityId: string
+  nmcRegistrationNo: string
+  credentialFileName?: string
+  verificationStatus: VerificationStatus
+  rejectionReason?: string
+}
+
+export interface Patient {
+  id: string
+  name: string
+  phone: string
+  dob?: string
+  gender?: "Male" | "Female" | "Other"
+  preferredLanguage: string
+  isGuardianManaged: boolean
+  abhaId?: string
+}
+
+export type TriageUrgency = "SelfCare" | "Teleconsult" | "InPerson" | "Emergency"
+
+export interface TriageAnswer {
+  questionId: string
+  value: string
+}
+
+export interface TriageSession {
+  id: string
+  patientId: string
+  answers: TriageAnswer[]
+  urgency: TriageUrgency
+  reason: string
+  createdAt: string
+}
+
+export type AppointmentType = "Teleconsult" | "InPerson"
+export type AppointmentStatus = "Booked" | "InQueue" | "InProgress" | "Completed" | "Cancelled"
+
+export interface Appointment {
+  id: string
+  patientId: string
+  facilityId: string
+  doctorId?: string
+  type: AppointmentType
+  slotTime: string
+  queuePosition?: number
+  estimatedWaitMinutes?: number
+  status: AppointmentStatus
+}
+
+export type ConsultationMode = "Video" | "Audio" | "Callback"
+
+export interface Consultation {
+  id: string
+  appointmentId: string
+  patientId: string
+  doctorId: string
+  mode: ConsultationMode
+  structuredDiagnosis: string[]
+  prescription: PrescriptionItem[]
+  notes: string
+  startedAt: string
+  endedAt?: string
+}
+
+export interface PrescriptionItem {
+  medicine: string
+  dosage: string
+  durationDays: number
+}
+
+export type ReferralStatus = "Pending" | "Confirmed" | "Completed"
+export type ReferralUrgency = "Routine" | "Urgent" | "Critical"
+
+export interface Referral {
+  id: string
+  patientId: string
+  patientName: string
+  fromFacilityId: string
+  toFacilityId: string
+  specialtyId: string
+  urgency: ReferralUrgency
+  structuredSummary: string
+  status: ReferralStatus
+  createdAt: string
+  updatedAt: string
+}
+
+export interface HealthRecordEntry {
+  id: string
+  patientId: string
+  facilityId: string
+  facilityName: string
+  type: "Consultation" | "Referral" | "Triage"
+  title: string
+  summary: string
+  date: string
+}
+
+export interface StockItem {
+  id: string
+  facilityId: string
+  name: string
+  category: "Medicine" | "Diagnostic"
+  status: "Available" | "LowStock" | "Unavailable"
+  updatedAt: string
+}
+
+export type RiskCategory = "Maternal" | "Child" | "Chronic"
+
+export interface FollowUpTask {
+  id: string
+  patientId: string
+  patientName: string
+  riskCategory: RiskCategory
+  dueAt: string
+  channel: "App" | "SMS" | "Call"
+  status: "Pending" | "Reached" | "Missed"
+}
+
+export interface FacilityQualityMetrics {
+  facilityId: string
+  patientLoadToday: number
+  referralCompletionRate: number
+  stockAvailabilityRate: number
+  avgWaitMinutes: number
+}

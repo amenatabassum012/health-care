@@ -1,0 +1,268 @@
+{
+  "app": {
+    "name": "Rural Health Connect"
+  },
+  "common": {
+    "back": "Back",
+    "next": "Next",
+    "continue": "Continue",
+    "submit": "Submit",
+    "cancel": "Cancel",
+    "save": "Save",
+    "loading": "Loading…",
+    "offline": "You're offline — showing saved data. It will sync automatically.",
+    "optional": "optional",
+    "required": "required",
+    "search": "Search",
+    "viewAll": "View all",
+    "km": "km away"
+  },
+  "role": {
+    "chooseRole": "Who are you?",
+    "chooseRoleSubtitle": "Choose how you'd like to use Rural Health Connect",
+    "patientGuardian": "Patient / Guardian",
+    "patientGuardianDesc": "Book visits, consult a doctor, and track your health records",
+    "doctorHealthWorker": "Doctor / Health Worker",
+    "doctorHealthWorkerDesc": "Manage patients, referrals, and facility records"
+  },
+  "lang": {
+    "selectLanguage": "Select your language",
+    "selectLanguageSubtitle": "You can change this anytime",
+    "continueIn": "Continue"
+  },
+  "patient": {
+    "login": {
+      "title": "Welcome back",
+      "subtitle": "Log in with your mobile number — no email needed",
+      "phoneLabel": "Mobile number",
+      "phonePlaceholder": "10-digit mobile number",
+      "sendOtp": "Send OTP",
+      "otpLabel": "Enter the 6-digit code",
+      "otpSentTo": "Code sent to",
+      "verifyOtp": "Verify & continue",
+      "changeNumber": "Change number",
+      "guardianToggle": "I'm booking for someone else",
+      "guardianHint": "Manage health records for a child or elder in your family"
+    },
+    "home": {
+      "greeting": "Hello",
+      "subtitle": "What would you like to do today?",
+      "bookAppointment": "Book appointment",
+      "bookAppointmentDesc": "Facility visit or teleconsult slot",
+      "startTeleconsult": "Start teleconsultation",
+      "startTeleconsultDesc": "Talk to a doctor now",
+      "myHealthRecords": "My health records",
+      "myHealthRecordsDesc": "Your visit history, anywhere",
+      "trackReferral": "Track referral",
+      "trackReferralDesc": "See your referral status",
+      "checkMedicine": "Check medicine availability",
+      "checkMedicineDesc": "At your facility or nearby",
+      "emergencySos": "Emergency SOS",
+      "emergencySosDesc": "Get help immediately",
+      "statusQueue": "You're in queue — position",
+      "statusReferral": "Referral update available",
+      "statusFollowUp": "Follow-up check-in due"
+    },
+    "triage": {
+      "startTitle": "Let's understand what's going on",
+      "startSubtitle": "A few quick questions in your language — this helps us recommend the right care",
+      "start": "Start triage",
+      "stepOf": "Step {{current}} of {{total}}",
+      "q1": {
+        "title": "What's the main concern?",
+        "fever": "Fever",
+        "breathing": "Breathing difficulty",
+        "pregnancy": "Pregnancy / women's health",
+        "child": "Child's health",
+        "injury": "Injury",
+        "chronic": "Chronic illness (BP, diabetes, etc.)",
+        "skin": "Skin problem",
+        "other": "Something else"
+      },
+      "q2": {
+        "title": "How severe does it feel?",
+        "mild": "Mild",
+        "moderate": "Moderate",
+        "severe": "Severe"
+      },
+      "q3": {
+        "title": "How long has this been going on?",
+        "today": "Since today",
+        "fewDays": "A few days",
+        "long": "More than a week"
+      },
+      "q4": {
+        "title": "Are any of these happening?",
+        "chestPain": "Chest pain",
+        "breathless": "Severe difficulty breathing",
+        "bleeding": "Heavy bleeding",
+        "unconscious": "Unconsciousness or confusion",
+        "none": "None of these"
+      },
+      "result": {
+        "title": "Here's what we recommend",
+        "emergency": "Emergency — get help now",
+        "inPerson": "Visit a facility in person",
+        "teleconsult": "Talk to a doctor by video/audio",
+        "selfCare": "Self-care at home",
+        "emergencyReason": "You reported a warning sign that needs immediate attention.",
+        "inPersonReason": "This needs a hands-on check by a doctor, so an in-person visit is best.",
+        "teleconsultReason": "A teleconsultation should be enough to guide your next step.",
+        "selfCareReason": "This looks mild — simple self-care should help. We'll still keep this on your record.",
+        "bookNow": "Book now",
+        "startCall": "Start teleconsultation",
+        "callEmergency": "Open Emergency SOS",
+        "selfCareTips": "Rest, stay hydrated, and monitor your symptoms. Contact us again if things get worse."
+      }
+    },
+    "booking": {
+      "title": "Book appointment",
+      "chooseFacility": "Choose a facility",
+      "chooseSlot": "Choose a time",
+      "inPerson": "In-person visit",
+      "teleconsult": "Teleconsultation",
+      "confirm": "Confirm booking",
+      "booked": "You're booked",
+      "queuePosition": "Queue position",
+      "estimatedWait": "Estimated wait",
+      "minutes": "min"
+    },
+    "teleconsult": {
+      "title": "Teleconsultation",
+      "connecting": "Connecting you to the doctor…",
+      "connectionGood": "Connection good",
+      "connectionPoor": "Weak connection — switching to audio",
+      "audioOnly": "Audio only",
+      "requestCallback": "Network too weak. Request a callback instead?",
+      "requestCallbackButton": "Request callback",
+      "endCall": "End consultation"
+    },
+    "records": {
+      "title": "My health records",
+      "subtitle": "Your visit history — the same record follows you across facilities",
+      "showQr": "Show my QR",
+      "showQrDesc": "Let any facility scan this to pull your record",
+      "qrConsent": "Sharing this QR shows your visit history to the facility that scans it. Every scan is logged.",
+      "empty": "No visits recorded yet"
+    },
+    "referral": {
+      "title": "Track referral",
+      "pending": "Pending",
+      "confirmed": "Confirmed",
+      "completed": "Completed",
+      "referredTo": "Referred to",
+      "forSpecialty": "For",
+      "from": "From"
+    },
+    "medicine": {
+      "title": "Medicine & diagnostic availability",
+      "searchPlaceholder": "Search medicine or test",
+      "availableAt": "Available at your facility",
+      "nearestAlternative": "Nearest facility with availability"
+    },
+    "sos": {
+      "title": "Emergency SOS",
+      "subtitle": "This bypasses the normal queue and alerts the nearest emergency-capable facility",
+      "confirm": "Send emergency alert",
+      "calling": "Alerting the nearest facility…",
+      "routedTo": "Help is on the way from",
+      "fallbackSms": "If this doesn't go through, we'll also send an SMS alert automatically."
+    }
+  },
+  "doctor": {
+    "login": {
+      "title": "Staff login",
+      "subtitle": "Secure sign-in for verified doctors and health workers",
+      "staffId": "Staff ID or registered mobile",
+      "facilityCode": "Facility code",
+      "password": "Password",
+      "login": "Log in",
+      "noAccount": "New staff member?",
+      "register": "Register here",
+      "pendingBlock": "Your account is still Pending Verification. You cannot log in until a facility admin approves it."
+    },
+    "register": {
+      "title": "Staff registration",
+      "stepOf": "Step {{current}} of {{total}}",
+      "step1Title": "Basic details",
+      "name": "Full name",
+      "phone": "Mobile number",
+      "email": "Email address",
+      "step2Title": "Your role",
+      "roleDoctor": "Doctor",
+      "roleDoctorDesc": "General practice at a facility",
+      "roleSpecialist": "Specialist",
+      "roleSpecialistDesc": "Consults in a specific specialty",
+      "roleCho": "Community Health Officer",
+      "roleChoDesc": "Frontline triage & follow-up at a sub-centre",
+      "roleAdmin": "Facility Admin",
+      "roleAdminDesc": "Manages staff verification & facility metrics",
+      "step3Title": "Facility affiliation",
+      "facilitySearch": "Search your facility",
+      "facilityHint": "Selected from the verified government facility registry — this can't be typed freely",
+      "step4Title": "Specialty",
+      "specialtySelect": "Select specialty",
+      "specialtyHint": "Required for specialists",
+      "step5Title": "Credential verification",
+      "nmcNumber": "Medical registration number (NMC / State Medical Council)",
+      "credentialUpload": "Upload certificate or ID photo",
+      "credentialUploadHint": "A clear photo of your registration certificate or ID card",
+      "submitRegistration": "Submit for verification",
+      "pendingTitle": "Registration submitted",
+      "pendingBody": "Your account is in Pending Verification. A facility admin will review your details before you can take consultations.",
+      "backToLogin": "Back to login"
+    },
+    "dashboard": {
+      "title": "Today's dashboard",
+      "queue": "Today's queue",
+      "referralInbox": "Referral inbox",
+      "urgent": "Urgent",
+      "viewHistory": "View full history",
+      "scopedTo": "Scoped to"
+    },
+    "consultation": {
+      "title": "Consultation",
+      "diagnosis": "Structured diagnosis",
+      "diagnosisPlaceholder": "Search diagnosis codes…",
+      "prescription": "Prescription",
+      "addMedicine": "Add medicine",
+      "referral": "Create referral",
+      "referralSpecialty": "Refer to specialty",
+      "referralFacility": "Refer to facility",
+      "referralUrgency": "Urgency",
+      "referralSummary": "Structured clinical summary",
+      "checkAvailability": "Check availability before referring",
+      "saveConsultation": "Save consultation"
+    },
+    "admin": {
+      "verificationQueue": "Doctor verification queue",
+      "approve": "Approve",
+      "reject": "Reject",
+      "rejectReason": "Reason for rejection",
+      "facilityDashboard": "Facility dashboard",
+      "patientLoad": "Patient load today",
+      "referralCompletion": "Referral completion rate",
+      "stockStatus": "Medicine & diagnostic stock",
+      "qualityMetrics": "Quality metrics",
+      "avgWait": "Average wait time"
+    }
+  },
+  "status": {
+    "pending": "Pending",
+    "verified": "Verified",
+    "rejected": "Rejected",
+    "available": "Available",
+    "lowStock": "Low stock",
+    "unavailable": "Unavailable",
+    "routine": "Routine",
+    "urgentLevel": "Urgent",
+    "critical": "Critical"
+  },
+  "nav": {
+    "home": "Home",
+    "records": "Records",
+    "referrals": "Referrals",
+    "dashboard": "Dashboard",
+    "logout": "Log out"
+  }
+}
