@@ -1,6 +1,8 @@
 import { useTranslation } from "react-i18next"
 import { useQuery } from "@tanstack/react-query"
 import { Check, Circle, Clock3 } from "lucide-react"
+import { EmptyState } from "@/components/shared/EmptyState"
+import { AllCaughtUp } from "@/components/illustrations/AllCaughtUp"
 import { getReferrals } from "@/lib/api/patient"
 import { getFacilities, getSpecialties } from "@/lib/api/shared"
 import { useSession } from "@/state/session"
@@ -24,6 +26,10 @@ export function ReferralPage() {
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-bold text-foreground">{t("patient.referral.title")}</h1>
+
+      {!referrals?.length && (
+        <EmptyState illustration={AllCaughtUp} title={t("patient.referral.empty")} />
+      )}
 
       <div className="space-y-4">
         {referrals?.map((r) => {

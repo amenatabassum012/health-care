@@ -6,6 +6,8 @@ import { FileCheck2, ShieldCheck, ShieldX } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { EmptyState } from "@/components/shared/EmptyState"
+import { AllCaughtUp } from "@/components/illustrations/AllCaughtUp"
 import { approveStaff, getPendingStaff, rejectStaff } from "@/lib/api/doctor"
 import { getSpecialties } from "@/lib/api/shared"
 import { useSession } from "@/state/session"
@@ -47,10 +49,7 @@ export function AdminVerificationPage() {
       <h1 className="text-2xl font-bold text-foreground">{t("doctor.admin.verificationQueue")}</h1>
 
       {pending?.length === 0 && (
-        <p className="rounded-xl bg-muted p-6 text-center text-sm text-muted-foreground">
-          <FileCheck2 className="mx-auto mb-2 size-6 text-success" />
-          Nothing pending review.
-        </p>
+        <EmptyState illustration={AllCaughtUp} title={t("doctor.admin.nothingPending")} />
       )}
 
       <div className="grid gap-4 sm:grid-cols-2">

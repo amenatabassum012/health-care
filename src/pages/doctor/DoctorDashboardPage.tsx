@@ -3,6 +3,8 @@ import { useQuery } from "@tanstack/react-query"
 import { Link } from "react-router-dom"
 import { ChevronRight, Siren, Stethoscope, Video } from "lucide-react"
 import { StatusBadge, type StatusTone } from "@/components/shared/StatusBadge"
+import { EmptyState } from "@/components/shared/EmptyState"
+import { AllCaughtUp } from "@/components/illustrations/AllCaughtUp"
 import { getDoctorQueue, getReferralInbox } from "@/lib/api/doctor"
 import { getFacilities, getSpecialties } from "@/lib/api/shared"
 import { useSession } from "@/state/session"
@@ -40,6 +42,10 @@ export function DoctorDashboardPage() {
         <h2 className="mb-3 text-sm font-bold uppercase tracking-wide text-muted-foreground">
           {t("doctor.dashboard.queue")}
         </h2>
+        {!queue?.length && (
+          <EmptyState illustration={AllCaughtUp} title={t("doctor.dashboard.queueEmpty")} />
+        )}
+
         <div className="overflow-hidden rounded-2xl border border-border bg-card">
           {queue?.map((appt, i) => (
             <Link
@@ -75,6 +81,10 @@ export function DoctorDashboardPage() {
         <h2 className="mb-3 text-sm font-bold uppercase tracking-wide text-muted-foreground">
           {t("doctor.dashboard.referralInbox")}
         </h2>
+        {!referrals?.length && (
+          <EmptyState illustration={AllCaughtUp} title={t("doctor.dashboard.referralInboxEmpty")} />
+        )}
+
         <div className="grid gap-3 sm:grid-cols-2">
           {referrals?.map((r) => {
             const facility = facilities?.find((f) => f.id === r.fromFacilityId)

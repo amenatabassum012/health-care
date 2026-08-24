@@ -14,11 +14,9 @@ import {
 import { ActionCard } from "@/components/shared/ActionCard"
 import { StatusBadge } from "@/components/shared/StatusBadge"
 import { getHomeSummary } from "@/lib/api/patient"
-import { useSession } from "@/state/session"
 
 export function PatientHomePage() {
   const { t } = useTranslation()
-  const { patient } = useSession()
 
   const { data } = useQuery({
     queryKey: ["home-summary"],
@@ -28,9 +26,7 @@ export function PatientHomePage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-foreground">
-          {t("patient.home.greeting")}, {patient?.name?.split(" ")[0]}
-        </h1>
+        <h1 className="text-2xl font-bold text-foreground">{t("patient.home.greeting")}</h1>
         <p className="text-sm text-muted-foreground">{t("patient.home.subtitle")}</p>
       </div>
 

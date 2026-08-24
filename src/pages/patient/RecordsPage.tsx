@@ -4,6 +4,8 @@ import { useQuery } from "@tanstack/react-query"
 import { QrCode, Stethoscope, GitBranch, ClipboardCheck } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { EmptyState } from "@/components/shared/EmptyState"
+import { EmptyRecords } from "@/components/illustrations/EmptyRecords"
 import { getHealthRecords } from "@/lib/api/patient"
 import { useSession } from "@/state/session"
 import type { HealthRecordEntry } from "@/types"
@@ -38,9 +40,7 @@ export function RecordsPage() {
       </Button>
 
       {!records?.length && (
-        <p className="rounded-xl bg-muted p-6 text-center text-sm text-muted-foreground">
-          {t("patient.records.empty")}
-        </p>
+        <EmptyState illustration={EmptyRecords} title={t("patient.records.empty")} />
       )}
 
       <div className="relative space-y-5 border-l-2 border-border pl-5">

@@ -4,6 +4,8 @@ import { useQuery } from "@tanstack/react-query"
 import { MapPin, Pill, Search } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { StatusBadge, type StatusTone } from "@/components/shared/StatusBadge"
+import { EmptyState } from "@/components/shared/EmptyState"
+import { EmptyMedicine } from "@/components/illustrations/EmptyMedicine"
 import { searchStock } from "@/lib/api/patient"
 import { MOCK_FACILITIES } from "@/mocks/facilities"
 import type { StockItem } from "@/types"
@@ -56,7 +58,7 @@ export function MedicinePage() {
             </div>
           ))}
           {stock?.length === 0 && (
-            <p className="rounded-xl bg-muted p-4 text-center text-sm text-muted-foreground">—</p>
+            <EmptyState illustration={EmptyMedicine} title={t("patient.medicine.empty")} />
           )}
         </div>
       </div>

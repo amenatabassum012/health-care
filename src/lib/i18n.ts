@@ -4,10 +4,12 @@ import { initReactI18next } from "react-i18next"
 
 import en from "@/locales/en/common.json"
 import hi from "@/locales/hi/common.json"
+import te from "@/locales/te/common.json"
 
 export const SUPPORTED_LANGUAGES = [
   { code: "en", nativeLabel: "English" },
   { code: "hi", nativeLabel: "हिंदी" },
+  { code: "te", nativeLabel: "తెలుగు" },
 ] as const
 
 const SUPPORTED_CODES = SUPPORTED_LANGUAGES.map((l) => l.code) as string[]
@@ -19,6 +21,7 @@ i18n
     resources: {
       en: { common: en },
       hi: { common: hi },
+      te: { common: te },
     },
     fallbackLng: "en",
     defaultNS: "common",

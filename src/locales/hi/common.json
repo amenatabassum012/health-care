@@ -46,7 +46,7 @@
     },
     "home": {
       "greeting": "नमस्ते",
-      "subtitle": "आज आप क्या करना चाहेंगे?",
+      "subtitle": "स्वास्थ्य ही सबसे बड़ा धन है।",
       "bookAppointment": "अपॉइंटमेंट बुक करें",
       "bookAppointmentDesc": "सुविधा विज़िट या टेलीकंसल्ट स्लॉट",
       "startTeleconsult": "टेलीकंसल्टेशन शुरू करें",
@@ -152,13 +152,15 @@
       "completed": "पूर्ण",
       "referredTo": "यहाँ रेफ़र किया गया",
       "forSpecialty": "के लिए",
-      "from": "से"
+      "from": "से",
+      "empty": "अभी तक कोई रेफ़रल नहीं है"
     },
     "medicine": {
       "title": "दवा और जांच उपलब्धता",
       "searchPlaceholder": "दवा या जांच खोजें",
       "availableAt": "आपकी सुविधा पर उपलब्ध",
-      "nearestAlternative": "उपलब्धता वाला निकटतम केंद्र"
+      "nearestAlternative": "उपलब्धता वाला निकटतम केंद्र",
+      "empty": "यहाँ कुछ नहीं मिला"
     },
     "sos": {
       "title": "आपातकालीन SOS",
@@ -218,7 +220,9 @@
       "referralInbox": "रेफ़रल इनबॉक्स",
       "urgent": "अत्यावश्यक",
       "viewHistory": "पूरा इतिहास देखें",
-      "scopedTo": "इसके लिए सीमित"
+      "scopedTo": "इसके लिए सीमित",
+      "queueEmpty": "अभी कतार में कोई मरीज़ नहीं है",
+      "referralInboxEmpty": "कोई रेफ़रल लंबित नहीं है"
     },
     "consultation": {
       "title": "परामर्श",
@@ -244,7 +248,8 @@
       "referralCompletion": "रेफ़रल पूर्णता दर",
       "stockStatus": "दवा और जांच स्टॉक",
       "qualityMetrics": "गुणवत्ता मेट्रिक्स",
-      "avgWait": "औसत प्रतीक्षा समय"
+      "avgWait": "औसत प्रतीक्षा समय",
+      "nothingPending": "समीक्षा के लिए कुछ भी लंबित नहीं है"
     }
   },
   "status": {

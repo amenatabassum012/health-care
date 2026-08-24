@@ -8,13 +8,18 @@ export function RoleSelectPage() {
   const { t } = useTranslation()
 
   return (
-    <div className="flex min-h-svh flex-col bg-gradient-to-b from-mint via-background to-background">
-      <header className="flex items-center justify-between px-5 py-4 sm:px-8">
+    <div
+      className="relative flex min-h-svh flex-col bg-cover bg-center"
+      style={{ backgroundImage: "url('https://images.pexels.com/photos/9574519/pexels-photo-9574519.jpeg')" }}
+    >
+      <div className="absolute inset-0 bg-gradient-to-b from-mint/40 via-background/30 to-background/60" />
+
+      <header className="relative z-10 flex items-center justify-between px-5 py-4 sm:px-8">
         <BrandMark />
         <LanguageToggle className="h-10 w-[130px] border-border bg-card" />
       </header>
 
-      <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col items-center justify-center px-5 py-8 text-center sm:px-8">
+      <main className="relative z-10 mx-auto flex w-full max-w-3xl flex-1 flex-col items-center justify-center px-5 py-8 text-center sm:px-8">
         <span className="mb-5 flex size-16 items-center justify-center rounded-2xl bg-teal-dark text-white shadow-lg shadow-teal-dark/20">
           <HeartPulse className="size-8" />
         </span>
@@ -52,7 +57,7 @@ export function RoleSelectPage() {
         </div>
       </main>
 
-      <footer className="px-5 py-6 text-center text-xs text-muted-foreground">
+      <footer className="relative z-10 px-5 py-6 text-center text-xs text-muted-foreground">
         {t("app.name")} — {t("role.chooseRoleSubtitle")}
       </footer>
     </div>
