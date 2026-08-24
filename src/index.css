@@ -1,0 +1,173 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+@import "@fontsource-variable/noto-sans";
+
+@custom-variant dark (&:is(.dark *));
+
+/*
+  Rural Health Connect brand tokens.
+  Source of truth: docs/03_Design_Specification.docx (section 2 — Visual Identity).
+  Do not introduce colours outside this set — see .cursorrules section 3.
+*/
+:root {
+  --radius: 0.75rem;
+
+  --rhc-teal-dark: #0b4f4a;
+  --rhc-teal: #0f766e;
+  --rhc-teal-mid: #149a8c;
+  --rhc-mint: #e6f6f3;
+  --rhc-blue: #1d4e89;
+  --rhc-success: #1e8e5a;
+  --rhc-amber: #e08e1d;
+  --rhc-coral: #d94f4f;
+  --rhc-ink: #1f2937;
+  --rhc-grey: #6b7280;
+
+  --background: #ffffff;
+  --foreground: var(--rhc-ink);
+  --card: #ffffff;
+  --card-foreground: var(--rhc-ink);
+  --popover: #ffffff;
+  --popover-foreground: var(--rhc-ink);
+
+  --primary: var(--rhc-teal);
+  --primary-foreground: #ffffff;
+  --secondary: var(--rhc-blue);
+  --secondary-foreground: #ffffff;
+  --muted: #f2f5f4;
+  --muted-foreground: var(--rhc-grey);
+  --accent: var(--rhc-mint);
+  --accent-foreground: var(--rhc-teal-dark);
+
+  --destructive: var(--rhc-coral);
+  --destructive-foreground: #ffffff;
+  --success: var(--rhc-success);
+  --success-foreground: #ffffff;
+  --warning: var(--rhc-amber);
+  --warning-foreground: #1f2937;
+
+  --border: #e5e7eb;
+  --input: #e5e7eb;
+  --ring: var(--rhc-teal-mid);
+
+  --sidebar: #ffffff;
+  --sidebar-foreground: var(--rhc-ink);
+  --sidebar-primary: var(--rhc-teal);
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: var(--rhc-mint);
+  --sidebar-accent-foreground: var(--rhc-teal-dark);
+  --sidebar-border: #e5e7eb;
+  --sidebar-ring: var(--rhc-teal-mid);
+}
+
+.dark {
+  --background: #0f1712;
+  --foreground: #eef4f2;
+  --card: #14201b;
+  --card-foreground: #eef4f2;
+  --popover: #14201b;
+  --popover-foreground: #eef4f2;
+
+  --primary: var(--rhc-teal-mid);
+  --primary-foreground: #06201c;
+  --secondary: #2b5da3;
+  --secondary-foreground: #ffffff;
+  --muted: #1b2621;
+  --muted-foreground: #9aa79f;
+  --accent: #16332c;
+  --accent-foreground: #bff0e6;
+
+  --destructive: #e7716f;
+  --destructive-foreground: #200606;
+  --success: #34a373;
+  --success-foreground: #04150c;
+  --warning: #f0a63f;
+  --warning-foreground: #201404;
+
+  --border: rgba(255, 255, 255, 0.1);
+  --input: rgba(255, 255, 255, 0.15);
+  --ring: var(--rhc-teal-mid);
+
+  --sidebar: #14201b;
+  --sidebar-foreground: #eef4f2;
+  --sidebar-primary: var(--rhc-teal-mid);
+  --sidebar-primary-foreground: #06201c;
+  --sidebar-accent: #16332c;
+  --sidebar-accent-foreground: #bff0e6;
+  --sidebar-border: rgba(255, 255, 255, 0.1);
+  --sidebar-ring: var(--rhc-teal-mid);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+
+  /* Brand-named aliases used directly in a handful of places (SOS button, hero accents) */
+  --color-teal-dark: var(--rhc-teal-dark);
+  --color-teal: var(--rhc-teal);
+  --color-teal-mid: var(--rhc-teal-mid);
+  --color-mint: var(--rhc-mint);
+  --color-brand-blue: var(--rhc-blue);
+  --color-coral: var(--rhc-coral);
+
+  --radius-sm: calc(var(--radius) - 8px);
+  --radius-md: calc(var(--radius) - 4px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+
+  --font-sans: "Noto Sans Variable", "Noto Sans", system-ui, "Segoe UI", Roboto, sans-serif;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  html {
+    color-scheme: light;
+    @apply font-sans;
+  }
+
+  body {
+    @apply antialiased bg-background text-foreground;
+    font-size: 16px;
+    line-height: 1.5;
+  }
+
+  #root {
+    min-height: 100svh;
+    display: flex;
+    flex-direction: column;
+  }
+}

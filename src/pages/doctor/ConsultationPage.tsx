@@ -1,0 +1,282 @@
+import { useState } from "react"
+import { useParams } from "react-router-dom"
+import { useTranslation } from "react-i18next"
+import { useQuery } from "@tanstack/react-query"
+import { toast } from "sonner"
+import { GitBranch, Plus, Search, Stethoscope, Trash2, X } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import { StatusBadge, type StatusTone } from "@/components/shared/StatusBadge"
+import { getFacilities, getSpecialties } from "@/lib/api/shared"
+import { searchStock } from "@/lib/api/patient"
+import { MOCK_HEALTH_RECORDS } from "@/mocks/patients"
+import { useSession } from "@/state/session"
+import type { PrescriptionItem, ReferralUrgency } from "@/types"
+
+const COMMON_DIAGNOSES = [
+  "Upper Respiratory Infection",
+  "Hypertension",
+  "Type 2 Diabetes",
+  "Anaemia",
+  "Antenatal Check-up — Normal",
+  "Antenatal Check-up — High Risk",
+  "Acute Gastroenteritis",
+  "Lower Respiratory Infection",
+  "Dermatitis",
+  "Malnutrition (Child)",
+]
+
+const URGENCY_TONE: Record<ReferralUrgency, StatusTone> = {
+  Routine: "info",
+  Urgent: "pending",
+  Critical: "emergency",
+}
+
+export function ConsultationPage() {
+  const { appointmentId } = useParams()
+  const { t } = useTranslation()
+  const { staff } = useSession()
+
+  const [diagnosisQuery, setDiagnosisQuery] = useState("")
+  const [diagnoses, setDiagnoses] = useState<string[]>([])
+  const [prescription, setPrescription] = useState<PrescriptionItem[]>([])
+  const [showReferral, setShowReferral] = useState(false)
+  const [refSpecialty, setRefSpecialty] = useState<string | undefined>()
+  const [refFacility, setRefFacility] = useState<string | undefined>()
+  const [refUrgency, setRefUrgency] = useState<ReferralUrgency>("Routine")
+  const [refSummary, setRefSummary] = useState("")
+  const [stockQuery, setStockQuery] = useState("")
+
+  const { data: facilities } = useQuery({ queryKey: ["facilities"], queryFn: getFacilities })
+  const { data: specialties } = useQuery({ queryKey: ["specialties"], queryFn: getSpecialties })
+  const { data: stockResults } = useQuery({
+    queryKey: ["stock-check", staff?.facilityId, stockQuery],
+    queryFn: () => searchStock(staff!.facilityId, stockQuery),
+    enabled: !!staff && stockQuery.length > 0,
+  })
+
+  const filteredDiagnoses = COMMON_DIAGNOSES.filter(
+    (d) => d.toLowerCase().includes(diagnosisQuery.toLowerCase()) && !diagnoses.includes(d)
+  )
+
+  const patientHistory = MOCK_HEALTH_RECORDS
+
+  function addPrescriptionRow() {
+    setPrescription((p) => [...p, { medicine: "", dosage: "", durationDays: 5 }])
+  }
+  function updateRow(i: number, patch: Partial<PrescriptionItem>) {
+    setPrescription((p) => p.map((row, idx) => (idx === i ? { ...row, ...patch } : row)))
+  }
+  function removeRow(i: number) {
+    setPrescription((p) => p.filter((_, idx) => idx !== i))
+  }
+
+  function submitReferral() {
+    if (!refSpecialty || !refFacility) {
+      toast.error(t("doctor.consultation.referral"))
+      return
+    }
+    toast.success(t("doctor.consultation.referral") + " — " + t("patient.referral.pending"))
+    setShowReferral(false)
+  }
+
+  return (
+    <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-xl font-bold text-foreground">{t("doctor.consultation.title")}</h1>
+          <p className="text-xs text-muted-foreground">Appointment #{appointmentId}</p>
+        </div>
+
+        <div className="rounded-2xl border border-border bg-card p-5">
+          <Label className="mb-2 block">{t("doctor.consultation.diagnosis")}</Label>
+          <div className="relative">
+            <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              value={diagnosisQuery}
+              onChange={(e) => setDiagnosisQuery(e.target.value)}
+              placeholder={t("doctor.consultation.diagnosisPlaceholder")}
+              className="h-11 pl-10"
+            />
+          </div>
+          {diagnosisQuery && (
+            <div className="mt-2 max-h-40 space-y-1 overflow-y-auto rounded-lg border border-border">
+              {filteredDiagnoses.map((d) => (
+                <button
+                  key={d}
+                  type="button"
+                  onClick={() => {
+                    setDiagnoses((prev) => [...prev, d])
+                    setDiagnosisQuery("")
+                  }}
+                  className="block w-full px-3 py-2 text-left text-sm hover:bg-muted"
+                >
+                  {d}
+                </button>
+              ))}
+            </div>
+          )}
+          {diagnoses.length > 0 && (
+            <div className="mt-3 flex flex-wrap gap-2">
+              {diagnoses.map((d) => (
+                <span key={d} className="flex items-center gap-1.5 rounded-full bg-mint px-3 py-1.5 text-xs font-medium text-teal-dark">
+                  {d}
+                  <button type="button" onClick={() => setDiagnoses((prev) => prev.filter((x) => x !== d))}>
+                    <X className="size-3" />
+                  </button>
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div className="rounded-2xl border border-border bg-card p-5">
+          <div className="mb-3 flex items-center justify-between">
+            <Label>{t("doctor.consultation.prescription")}</Label>
+            <Button variant="outline" size="sm" onClick={addPrescriptionRow}>
+              <Plus className="size-3.5" />
+              {t("doctor.consultation.addMedicine")}
+            </Button>
+          </div>
+          <div className="space-y-2">
+            {prescription.map((row, i) => (
+              <div key={i} className="grid grid-cols-[1fr_90px_70px_auto] gap-2">
+                <Input
+                  placeholder="Medicine"
+                  value={row.medicine}
+                  onChange={(e) => updateRow(i, { medicine: e.target.value })}
+                  className="h-9"
+                />
+                <Input
+                  placeholder="Dosage"
+                  value={row.dosage}
+                  onChange={(e) => updateRow(i, { dosage: e.target.value })}
+                  className="h-9"
+                />
+                <Input
+                  type="number"
+                  value={row.durationDays}
+                  onChange={(e) => updateRow(i, { durationDays: Number(e.target.value) })}
+                  className="h-9"
+                />
+                <Button variant="ghost" size="icon" onClick={() => removeRow(i)}>
+                  <Trash2 className="size-4 text-coral" />
+                </Button>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="rounded-2xl border border-border bg-card p-5">
+          <div className="mb-3 flex items-center justify-between">
+            <Label>{t("doctor.consultation.checkAvailability")}</Label>
+          </div>
+          <div className="relative">
+            <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              value={stockQuery}
+              onChange={(e) => setStockQuery(e.target.value)}
+              placeholder="e.g. Chest X-ray"
+              className="h-10 pl-10"
+            />
+          </div>
+          {stockResults && stockResults.length > 0 && (
+            <div className="mt-2 space-y-1.5">
+              {stockResults.map((s) => (
+                <div key={s.id} className="flex items-center justify-between rounded-lg bg-muted px-3 py-2 text-sm">
+                  {s.name}
+                  <StatusBadge
+                    tone={s.status === "Available" ? "completed" : s.status === "LowStock" ? "pending" : "emergency"}
+                    label={t(`status.${s.status.charAt(0).toLowerCase() + s.status.slice(1)}`)}
+                  />
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {!showReferral ? (
+          <Button variant="outline" size="xl" onClick={() => setShowReferral(true)}>
+            <GitBranch className="size-4" />
+            {t("doctor.consultation.referral")}
+          </Button>
+        ) : (
+          <div className="rounded-2xl border border-brand-blue/30 bg-brand-blue/5 p-5">
+            <Label className="mb-3 block text-brand-blue">{t("doctor.consultation.referral")}</Label>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="space-y-1.5">
+                <Label className="text-xs">{t("doctor.consultation.referralSpecialty")}</Label>
+                <Select value={refSpecialty} onValueChange={(v) => setRefSpecialty(v ?? undefined)}>
+                  <SelectTrigger className="h-10 w-full"><SelectValue placeholder="—" /></SelectTrigger>
+                  <SelectContent>
+                    {specialties?.map((s) => <SelectItem key={s.id} value={s.id}>{s.label}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs">{t("doctor.consultation.referralFacility")}</Label>
+                <Select value={refFacility} onValueChange={(v) => setRefFacility(v ?? undefined)}>
+                  <SelectTrigger className="h-10 w-full"><SelectValue placeholder="—" /></SelectTrigger>
+                  <SelectContent>
+                    {facilities?.map((f) => <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="mt-3 space-y-1.5">
+              <Label className="text-xs">{t("doctor.consultation.referralUrgency")}</Label>
+              <div className="flex gap-2">
+                {(["Routine", "Urgent", "Critical"] as ReferralUrgency[]).map((u) => (
+                  <button
+                    key={u}
+                    type="button"
+                    onClick={() => setRefUrgency(u)}
+                    className={refUrgency === u ? "" : "opacity-50"}
+                  >
+                    <StatusBadge tone={URGENCY_TONE[u]} label={t(`status.${u === "Routine" ? "routine" : u === "Urgent" ? "urgentLevel" : "critical"}`)} />
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="mt-3 space-y-1.5">
+              <Label className="text-xs">{t("doctor.consultation.referralSummary")}</Label>
+              <Textarea value={refSummary} onChange={(e) => setRefSummary(e.target.value)} rows={3} />
+            </div>
+            <Button className="mt-4 bg-brand-blue text-white hover:bg-brand-blue/90" onClick={submitReferral}>
+              {t("common.submit")}
+            </Button>
+          </div>
+        )}
+
+        <Button size="xl" className="w-full bg-teal text-white hover:bg-teal-dark">
+          {t("doctor.consultation.saveConsultation")}
+        </Button>
+      </div>
+
+      <aside className="space-y-3">
+        <h2 className="flex items-center gap-1.5 text-sm font-bold uppercase tracking-wide text-muted-foreground">
+          <Stethoscope className="size-3.5" />
+          {t("doctor.dashboard.viewHistory")}
+        </h2>
+        <div className="space-y-3">
+          {patientHistory.map((r) => (
+            <div key={r.id} className="rounded-xl border border-border bg-card p-3.5">
+              <p className="text-[11px] text-muted-foreground">{r.date} · {r.facilityName}</p>
+              <p className="text-sm font-semibold text-foreground">{r.title}</p>
+              <p className="text-xs text-muted-foreground">{r.summary}</p>
+            </div>
+          ))}
+        </div>
+      </aside>
+    </div>
+  )
+}
