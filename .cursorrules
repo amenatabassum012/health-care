@@ -1,0 +1,92 @@
+# Rural Health Connect — AI Coding Rules
+
+You are building **Rural Health Connect (RHC)**, an integrated care-access and quality platform for
+rural and underserved public healthcare in India. Full context lives in `docs/`:
+`01_PRD_Product_Requirements_Document.docx`, `02_Architecture_Specification.docx`,
+`03_Design_Specification.docx`, `04_Phased_Implementation_Roadmap.docx`. Follow those documents as the
+source of truth for scope, data model, and screens. These rules govern HOW code gets written.
+
+## 0. Build sequencing — frontend first
+- We are building the **frontend first**, against a mocked API layer, before any real backend exists.
+- Every API call goes through a single typed client (e.g. `src/lib/api/*`) with a contract matching the
+  Architecture Specification's service boundaries. Mock implementations live behind the same interface as
+  the eventual real calls, so swapping in a real backend later never requires touching UI/component code.
+- Never hardcode mock data inline inside components. Mocks live in `src/mocks/` and are shaped exactly like
+  the real API responses will be.
+- Do not build backend services (NestJS/Postgres/etc.) unless explicitly asked. Assume "later."
+
+## 1. Tech stack (do not deviate without being asked)
+- React 18 + TypeScript + Vite. Functional components + hooks only, no class components.
+- Tailwind CSS + shadcn/ui (Radix primitives) for all UI. No other component/UI library.
+- TanStack Query for server-state; Dexie.js (IndexedDB) for the offline-first local cache; React state/
+  context only for local UI state — no Redux.
+- react-i18next for all user-facing copy. No hardcoded English strings in components — every string goes
+  through the translation catalogue (`src/locales/<lang>/*.json`), even before other languages are added.
+- react-router for navigation.
+- react-hook-form + zod for every form (triage questionnaire, registration, booking, consultation entry).
+
+## 2. Two apps, two identities — never blur them
+- Patient/Guardian and Doctor/Health-Worker are **separate flows with separate layouts, separate login
+  screens, and separate route trees** (e.g. `/patient/*` vs `/doctor/*` or separate app shells). Never
+  build a shared login form with a role toggle — the PRD and Design Spec are explicit that these are
+  distinct experiences from the landing screen onward.
+- Route guards enforce role scope: a doctor route must never be reachable from a patient session and vice
+  versa. A verified doctor's session is additionally scoped to their facility + specialty — encode this in
+  the route/query layer, not just hidden in the UI.
+
+## 3. Design system discipline (see 03_Design_Specification.docx for full spec)
+- Colour tokens, defined once in `tailwind.config` — never inline hex values in components:
+  - Primary: teal-dark `#0B4F4A`, teal `#0F766E`, teal-mid `#149A8C`, mint tint `#E6F6F3`
+  - Secondary: blue `#1D4E89`
+  - Semantic (used identically everywhere, never redefined per-screen): success green `#1E8E5A`,
+    pending amber `#E08E1D`, emergency/critical coral `#D94F4F`
+  - Neutral: ink `#1F2937`, grey `#6B7280`
+- One primary action per screen, visually dominant. Secondary actions are outlined, never competing.
+- Every icon-first action ships with a visible text label. Never icon-only.
+- Minimum touch target 48x48px. Minimum body text 16px on mobile. Use Noto Sans (or equivalent with full
+  Devanagari/regional-script coverage) — this is a multilingual, low-literacy-first product.
+- Status/urgency colour meaning is fixed project-wide (coral=emergency, amber=pending, blue=confirmed/in
+  progress, green=completed). Never reuse these colours for unrelated meanings.
+- Build reusable primitives first (Button, Card, StatusBadge, ActionCard, QueueCounter, TimelineItem,
+  OfflineBanner) in `src/components/ui/` before building screen-specific layouts — the whole product reuses
+  the same small component set across patient and doctor apps.
+
+## 4. Accessibility & low-literacy requirements (non-negotiable)
+- WCAG AA contrast minimum on every color pairing you introduce.
+- Every questionnaire/search input gets a voice-input affordance slot, even if not wired up yet in an early
+  phase — leave the UI slot so it's a drop-in later, not a redesign.
+- Never ship a screen that is text-only with no icon, or icon-only with no label.
+- All user-facing copy must be simple, short-sentence language — this is enforced in the translation
+  catalogue, not just in English source strings.
+
+## 5. Structured data, never free text (this is the whole point of the product)
+- Diagnosis, referral specialty, facility affiliation, and doctor credentials are **never** free-text
+  inputs. Use dropdowns/typeahead against a fixed or registry-backed dataset (see PRD §6.4 and
+  Architecture §5). This directly fixes the eSanjeevani mis-routed-referral problem — do not regress it by
+  taking a shortcut with a plain `<input>`.
+- Facility affiliation during doctor registration is a searchable select against a facility dataset, never
+  a typed string.
+
+## 6. Offline-first patterns
+- Any screen listed as offline-capable in the PRD (triage form, health record viewing, queue status) must
+  read/write through the local Dexie cache first, with sync as a background concern — never block the UI
+  on a network round-trip for these screens.
+- Show an `OfflineBanner` (non-blocking, neutral tone) when offline — never a blocking error modal for a
+  feature that's supposed to work offline.
+
+## 7. Code conventions
+- File naming: `PascalCase.tsx` for components, `camelCase.ts` for hooks/utils. One component per file.
+- Co-locate a component's Storybook-style usage examples or tests only if asked; do not scaffold test
+  files speculatively.
+- No comments explaining *what* code does — code should be self-explanatory via naming. Only comment a
+  genuinely non-obvious constraint (e.g., "why this field must stay a string for FHIR mapping").
+- Do not introduce a new dependency without a clear justification tied to a requirement in the PRD/
+  Architecture docs.
+- Keep components small and screen-specific logic out of shared UI primitives.
+
+## 8. What NOT to do
+- Do not add payment, insurance, or billing UI — explicitly out of scope (PRD §5.2).
+- Do not build a unified/shared patient+doctor login.
+- Do not replace structured fields with free text "to move faster."
+- Do not add native iOS scaffolding in V1 — PWA/Android-first per the roadmap.
+- Do not invent new brand colours outside the token set in §3 above.
