@@ -61,7 +61,7 @@ export function TriagePage() {
   const [started, setStarted] = useState(false)
   const [stepIndex, setStepIndex] = useState(0)
   const [answers, setAnswers] = useState<Record<string, string>>({})
-  const [otherDetail, setOtherDetail] = useState("")
+  const [otherDetails, setOtherDetails] = useState<Record<string, string>>({})
   const [result, setResult] = useState<ReturnType<typeof computeTriageResult> | null>(null)
   const [submitting, setSubmitting] = useState(false)
 
@@ -82,8 +82,10 @@ export function TriagePage() {
       questionId,
       value,
     }))
-    if (answers.danger_signs === "other" && otherDetail.trim()) {
-      list.push({ questionId: "danger_signs_other", value: otherDetail.trim() })
+    for (const [questionId, value] of Object.entries(otherDetails)) {
+      if (answers[questionId] === "other" && value.trim()) {
+        list.push({ questionId: `${questionId}_other`, value: value.trim() })
+      }
     }
     const session = await submitTriage(patient!.id, list)
     setResult({ urgency: session.urgency, reasonKey: session.reason })
@@ -246,12 +248,14 @@ export function TriagePage() {
         })}
       </div>
 
-      {isDangerStep && selected === "other" && (
+      {selected === "other" && (
         <Input
           autoFocus
-          value={otherDetail}
-          onChange={(e) => setOtherDetail(e.target.value)}
-          placeholder={t("patient.triage.q4.otherPlaceholder")}
+          value={otherDetails[question.id] ?? ""}
+          onChange={(e) =>
+            setOtherDetails((prev) => ({ ...prev, [question.id]: e.target.value }))
+          }
+          placeholder={t(question.titleKey.replace(".title", ".otherPlaceholder"))}
           className="mt-3 h-12 rounded-xl px-4 text-sm"
         />
       )}
@@ -265,7 +269,7 @@ export function TriagePage() {
         <Button
           size="xl"
           className="flex-1 bg-teal text-white hover:bg-teal-dark"
-          disabled={!selected || (isDangerStep && selected === "other" && !otherDetail.trim()) || submitting}
+          disabled={!selected || (selected === "other" && !(otherDetails[question.id] ?? "").trim()) || submitting}
           onClick={handleNext}
         >
           {submitting ? t("common.loading") : isLast ? t("common.submit") : t("common.next")}

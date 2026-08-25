@@ -88,7 +88,8 @@
         "injury": "Injury",
         "chronic": "Chronic illness (BP, diabetes, etc.)",
         "skin": "Skin problem",
-        "other": "Something else"
+        "other": "Something else",
+        "otherPlaceholder": "Please describe your concern"
       },
       "q2": {
         "title": "How severe does it feel?",
