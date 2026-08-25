@@ -22,8 +22,10 @@ import {
   type LucideIcon,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
 import { Progress } from "@/components/ui/progress"
 import { StatusBadge, type StatusTone } from "@/components/shared/StatusBadge"
+import { SpeakButton } from "@/components/shared/SpeakButton"
 import { TRIAGE_QUESTIONS, computeTriageResult } from "@/mocks/triage"
 import { submitTriage } from "@/lib/api/patient"
 import { useSession } from "@/state/session"
@@ -59,6 +61,7 @@ export function TriagePage() {
   const [started, setStarted] = useState(false)
   const [stepIndex, setStepIndex] = useState(0)
   const [answers, setAnswers] = useState<Record<string, string>>({})
+  const [otherDetail, setOtherDetail] = useState("")
   const [result, setResult] = useState<ReturnType<typeof computeTriageResult> | null>(null)
   const [submitting, setSubmitting] = useState(false)
 
@@ -79,6 +82,9 @@ export function TriagePage() {
       questionId,
       value,
     }))
+    if (answers.danger_signs === "other" && otherDetail.trim()) {
+      list.push({ questionId: "danger_signs_other", value: otherDetail.trim() })
+    }
     const session = await submitTriage(patient!.id, list)
     setResult({ urgency: session.urgency, reasonKey: session.reason })
     setSubmitting(false)
@@ -102,7 +108,19 @@ export function TriagePage() {
           <Icon className="size-8" />
         </span>
         <p className="text-sm text-muted-foreground">{t("patient.triage.result.title")}</p>
-        <h1 className="mt-1 text-2xl font-bold text-foreground">{t(meta.titleKey)}</h1>
+        <div className="mt-1 flex items-center gap-2">
+          <h1 className="text-2xl font-bold text-foreground">{t(meta.titleKey)}</h1>
+          <SpeakButton
+            autoPlay
+            text={[
+              t(meta.titleKey),
+              t(result.reasonKey),
+              result.urgency === "SelfCare" ? t("patient.triage.result.selfCareTips") : "",
+            ]
+              .filter(Boolean)
+              .join(". ")}
+          />
+        </div>
         <StatusBadge tone={meta.tone} label={t(meta.titleKey)} className="mt-3" />
         <p className="mt-4 max-w-sm text-sm text-muted-foreground">{t(result.reasonKey)}</p>
 
@@ -145,7 +163,10 @@ export function TriagePage() {
         <span className="mb-4 flex size-16 items-center justify-center rounded-2xl bg-mint text-teal-dark">
           <Stethoscope className="size-8" />
         </span>
-        <h1 className="text-2xl font-bold text-foreground">{t("patient.triage.startTitle")}</h1>
+        <div className="flex items-center gap-2">
+          <h1 className="text-2xl font-bold text-foreground">{t("patient.triage.startTitle")}</h1>
+          <SpeakButton autoPlay text={`${t("patient.triage.startTitle")}. ${t("patient.triage.startSubtitle")}`} />
+        </div>
         <p className="mt-2 max-w-sm text-sm text-muted-foreground">{t("patient.triage.startSubtitle")}</p>
         <Button size="xl" className="mt-8 w-full max-w-sm bg-teal text-white hover:bg-teal-dark" onClick={() => setStarted(true)}>
           {t("patient.triage.start")}
@@ -184,7 +205,13 @@ export function TriagePage() {
         </span>
       </div>
 
-      <h1 className="mb-5 text-xl font-bold text-foreground">{t(question.titleKey)}</h1>
+      <div className="mb-5 flex items-center gap-2">
+        <h1 className="text-xl font-bold text-foreground">{t(question.titleKey)}</h1>
+        <SpeakButton
+          autoPlay
+          text={[t(question.titleKey), ...question.options.map((opt) => t(opt.labelKey))].join(". ")}
+        />
+      </div>
 
       <div className={cn("grid gap-3", isDangerStep ? "grid-cols-1" : "grid-cols-2")}>
         {question.options.map((opt) => {
@@ -219,6 +246,16 @@ export function TriagePage() {
         })}
       </div>
 
+      {isDangerStep && selected === "other" && (
+        <Input
+          autoFocus
+          value={otherDetail}
+          onChange={(e) => setOtherDetail(e.target.value)}
+          placeholder={t("patient.triage.q4.otherPlaceholder")}
+          className="mt-3 h-12 rounded-xl px-4 text-sm"
+        />
+      )}
+
       <div className="mt-8 flex gap-3">
         {stepIndex > 0 && (
           <Button variant="outline" size="xl" onClick={() => setStepIndex((i) => i - 1)}>
@@ -228,7 +265,7 @@ export function TriagePage() {
         <Button
           size="xl"
           className="flex-1 bg-teal text-white hover:bg-teal-dark"
-          disabled={!selected || submitting}
+          disabled={!selected || (isDangerStep && selected === "other" && !otherDetail.trim()) || submitting}
           onClick={handleNext}
         >
           {submitting ? t("common.loading") : isLast ? t("common.submit") : t("common.next")}

@@ -15,7 +15,10 @@
     "required": "required",
     "search": "Search",
     "viewAll": "View all",
-    "km": "km away"
+    "km": "km away",
+    "playAudio": "Listen",
+    "stopAudio": "Stop listening",
+    "noVoiceForLanguage": "This device doesn't have a voice installed for your language yet"
   },
   "role": {
     "chooseRole": "Who are you?",
@@ -105,6 +108,8 @@
         "breathless": "Severe difficulty breathing",
         "bleeding": "Heavy bleeding",
         "unconscious": "Unconsciousness or confusion",
+        "other": "Something else",
+        "otherPlaceholder": "Please describe what's happening",
         "none": "None of these"
       },
       "result": {

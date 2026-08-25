@@ -27,6 +27,9 @@ export function MedicinePage() {
     queryFn: () => searchStock(HOME_FACILITY_ID, query),
   })
 
+  const homeFacility = MOCK_FACILITIES.find((f) => f.id === HOME_FACILITY_ID)
+  const nearestFacility = MOCK_FACILITIES.find((f) => f.id === "fac-dh-001")
+
   return (
     <div className="space-y-5">
       <h1 className="text-2xl font-bold text-foreground">{t("patient.medicine.title")}</h1>
@@ -42,8 +45,15 @@ export function MedicinePage() {
       </div>
 
       <div>
-        <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-          {t("patient.medicine.availableAt")} — {MOCK_FACILITIES.find((f) => f.id === HOME_FACILITY_ID)?.name}
+        <p className="mb-2 flex items-center gap-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+          <span>
+            {t("patient.medicine.availableAt")} — {homeFacility?.name}
+          </span>
+          {homeFacility?.distanceKm !== undefined && (
+            <span className="flex items-center gap-0.5 normal-case tracking-normal">
+              <MapPin className="size-3" /> {homeFacility.distanceKm} {t("common.km")}
+            </span>
+          )}
         </p>
         <div className="space-y-2.5">
           {stock?.map((item) => (
@@ -65,7 +75,8 @@ export function MedicinePage() {
 
       <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
         <MapPin className="size-3.5" />
-        {t("patient.medicine.nearestAlternative")}: {MOCK_FACILITIES.find((f) => f.id === "fac-dh-001")?.name}
+        {t("patient.medicine.nearestAlternative")}: {nearestFacility?.name}
+        {nearestFacility?.distanceKm !== undefined && ` (${nearestFacility.distanceKm} ${t("common.km")})`}
       </p>
     </div>
   )

@@ -5,6 +5,7 @@ import { CalendarClock, Clock, ExternalLink, Hospital, MapPin, Star, Users, Vide
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { SpeakButton } from "@/components/shared/SpeakButton"
 import { getDoctorRatingSummary, getFacilities, getSpecialties, getStaff } from "@/lib/api/shared"
 import { createAppointment } from "@/lib/api/patient"
 import { useSession } from "@/state/session"
@@ -33,6 +34,16 @@ function DoctorOption({
   })
   const topQualification = doc.qualifications?.[doc.qualifications.length - 1]
 
+  const speakText = [
+    doc.name,
+    specialty?.label,
+    doc.consultationFeeInr !== undefined ? `₹${doc.consultationFeeInr}` : "",
+    ratingSummary?.rating !== undefined ? `${ratingSummary.rating} ${t("patient.doctorProfile.rating")}` : "",
+    doc.availability,
+  ]
+    .filter(Boolean)
+    .join(". ")
+
   return (
     <div
       onClick={onSelect}
@@ -45,12 +56,15 @@ function DoctorOption({
       )}
     >
       <div className="flex items-start justify-between gap-2">
-        <div className="min-w-0">
-          <p className="truncate text-sm font-semibold text-foreground">{doc.name}</p>
-          <p className="truncate text-xs text-muted-foreground">
-            {specialty?.label}
-            {topQualification ? ` · ${topQualification.degree}` : ""}
-          </p>
+        <div className="flex min-w-0 items-center gap-1.5">
+          <div className="min-w-0">
+            <p className="truncate text-sm font-semibold text-foreground">{doc.name}</p>
+            <p className="truncate text-xs text-muted-foreground">
+              {specialty?.label}
+              {topQualification ? ` · ${topQualification.degree}` : ""}
+            </p>
+          </div>
+          <SpeakButton text={speakText} size="sm" />
         </div>
         {doc.consultationFeeInr !== undefined && (
           <span className="shrink-0 text-sm font-bold text-teal-dark">₹{doc.consultationFeeInr}</span>
@@ -127,7 +141,15 @@ export function BookingPage() {
         <span className="mb-4 flex size-16 items-center justify-center rounded-2xl bg-success/15 text-success">
           <CalendarClock className="size-8" />
         </span>
-        <h1 className="text-2xl font-bold text-foreground">{t("patient.booking.booked")}</h1>
+        <div className="flex items-center gap-2">
+          <h1 className="text-2xl font-bold text-foreground">{t("patient.booking.booked")}</h1>
+          <SpeakButton
+            autoPlay
+            text={`${t("patient.booking.booked")}. ${t("patient.booking.queuePosition")} ${appt.queuePosition}. ${t(
+              "patient.booking.estimatedWait"
+            )}: ${appt.estimatedWaitMinutes} ${t("patient.booking.minutes")}`}
+          />
+        </div>
         {appt.bookedForName && (
           <p className="mt-1 text-sm text-muted-foreground">
             {t("patient.booking.bookedFor.summary", {
@@ -179,18 +201,28 @@ export function BookingPage() {
       </div>
 
       <div>
-        <p className="mb-3 text-sm font-semibold text-foreground">{t("patient.booking.chooseFacility")}</p>
+        <div className="mb-3 flex items-center gap-2">
+          <p className="text-sm font-semibold text-foreground">{t("patient.booking.chooseFacility")}</p>
+          <SpeakButton autoPlay text={t("patient.booking.chooseFacility")} size="sm" />
+        </div>
         <div className="space-y-2.5">
           {facilities?.map((f) => (
-            <button
+            <div
               key={f.id}
-              type="button"
+              role="button"
+              tabIndex={0}
               onClick={() => {
                 setFacilityId(f.id)
                 setDoctorId(null)
               }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  setFacilityId(f.id)
+                  setDoctorId(null)
+                }
+              }}
               className={cn(
-                "flex w-full items-center justify-between rounded-xl border-2 px-4 py-3 text-left",
+                "flex w-full cursor-pointer items-center justify-between rounded-xl border-2 px-4 py-3 text-left",
                 facilityId === f.id ? "border-teal bg-mint" : "border-border bg-card"
               )}
             >
@@ -200,31 +232,41 @@ export function BookingPage() {
                   <MapPin className="size-3" /> {f.distanceKm} {t("common.km")}
                 </span>
               </span>
-            </button>
+              <SpeakButton text={`${facilityLabel(f)}. ${f.distanceKm} ${t("common.km")}`} size="sm" />
+            </div>
           ))}
         </div>
       </div>
 
       {facilityId && (
         <div>
-          <p className="mb-3 text-sm font-semibold text-foreground">{t("patient.booking.chooseDoctor")}</p>
+          <div className="mb-3 flex items-center gap-2">
+            <p className="text-sm font-semibold text-foreground">{t("patient.booking.chooseDoctor")}</p>
+            <SpeakButton autoPlay text={t("patient.booking.chooseDoctor")} size="sm" />
+          </div>
           <div className="space-y-2.5">
-            <button
-              type="button"
+            <div
+              role="button"
+              tabIndex={0}
               onClick={() => setDoctorId(null)}
+              onKeyDown={(e) => e.key === "Enter" && setDoctorId(null)}
               className={cn(
-                "flex w-full items-center gap-3 rounded-xl border-2 px-4 py-3 text-left",
+                "flex w-full cursor-pointer items-center gap-3 rounded-xl border-2 px-4 py-3 text-left",
                 doctorId === null ? "border-teal bg-mint" : "border-border bg-card"
               )}
             >
               <span className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
                 <Users className="size-5" />
               </span>
-              <span>
+              <span className="min-w-0 flex-1">
                 <span className="block text-sm font-semibold text-foreground">{t("patient.booking.anyDoctor")}</span>
                 <span className="block text-xs text-muted-foreground">{t("patient.booking.anyDoctorDesc")}</span>
               </span>
-            </button>
+              <SpeakButton
+                text={`${t("patient.booking.anyDoctor")}. ${t("patient.booking.anyDoctorDesc")}`}
+                size="sm"
+              />
+            </div>
 
             {availableDoctors?.map((doc) => (
               <DoctorOption

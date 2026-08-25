@@ -62,6 +62,7 @@ export const TRIAGE_QUESTIONS: TriageQuestion[] = [
       { value: "breathless", labelKey: "patient.triage.q4.breathless", icon: "lungs" },
       { value: "bleeding", labelKey: "patient.triage.q4.bleeding", icon: "other" },
       { value: "unconscious", labelKey: "patient.triage.q4.unconscious", icon: "other" },
+      { value: "other", labelKey: "patient.triage.q4.other", icon: "other" },
       { value: "none", labelKey: "patient.triage.q4.none", icon: "other" },
     ],
   },

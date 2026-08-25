@@ -1,10 +1,11 @@
-import { lazy, Suspense } from "react"
-import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom"
+import { lazy, Suspense, useEffect } from "react"
+import { BrowserRouter, Navigate, Route, Routes, useLocation } from "react-router-dom"
 import { Loader2 } from "lucide-react"
 
 import { PatientLayout } from "@/components/layout/PatientLayout"
 import { DoctorLayout } from "@/components/layout/DoctorLayout"
 import { RequireFacilityAdmin, RequirePatient, RequireStaff } from "@/components/layout/RouteGuards"
+import { stopSpeaking } from "@/lib/speech"
 
 const RoleSelectPage = lazy(() => import("@/pages/RoleSelectPage").then((m) => ({ default: m.RoleSelectPage })))
 
@@ -38,9 +39,25 @@ function RouteLoadingFallback() {
   )
 }
 
+/**
+ * Any audio a page is reading aloud must stop the moment the patient
+ * navigates away — otherwise it keeps talking over whatever screen they
+ * land on next. Component unmount cleanup alone isn't reliable here (a
+ * slow voice lookup can still start speech after its own page unmounted),
+ * so this stops it deterministically on every route change instead.
+ */
+function StopSpeechOnNavigate() {
+  const location = useLocation()
+  useEffect(() => {
+    stopSpeaking()
+  }, [location.pathname])
+  return null
+}
+
 export function App() {
   return (
     <BrowserRouter>
+      <StopSpeechOnNavigate />
       <Suspense fallback={<RouteLoadingFallback />}>
         <Routes>
           <Route path="/" element={<RoleSelectPage />} />
