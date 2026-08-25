@@ -65,7 +65,7 @@ export function MedicinePage() {
 
       <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
         <MapPin className="size-3.5" />
-        {t("patient.medicine.nearestAlternative")}: District Hospital Haridwar
+        {t("patient.medicine.nearestAlternative")}: {MOCK_FACILITIES.find((f) => f.id === "fac-dh-001")?.name}
       </p>
     </div>
   )

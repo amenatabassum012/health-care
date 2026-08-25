@@ -9,7 +9,7 @@ import {
   MOCK_STOCK,
 } from "@/mocks/patients"
 import { computeTriageResult, type TriageOption } from "@/mocks/triage"
-import type { Appointment, Patient, StockItem, TriageAnswer, TriageSession } from "@/types"
+import type { Appointment, DoctorFeedback, Patient, StockItem, TriageAnswer, TriageSession } from "@/types"
 import { networkDelay } from "./delay"
 
 export async function requestOtp(phone: string) {
@@ -56,6 +56,7 @@ export async function createAppointment(
   patientId: string,
   facilityId: string,
   type: Appointment["type"],
+  doctorId?: string,
   bookedFor?: { name: string; relation: Appointment["bookedForRelation"] }
 ): Promise<Appointment> {
   await networkDelay(700)
@@ -63,6 +64,7 @@ export async function createAppointment(
     id: `appt-${Date.now()}`,
     patientId,
     facilityId,
+    doctorId,
     type,
     slotTime: new Date(Date.now() + 45 * 60 * 1000).toISOString(),
     queuePosition: Math.floor(Math.random() * 6) + 2,
@@ -84,6 +86,32 @@ export async function getAppointments(patientId: string) {
 
 export async function getCachedAppointments(patientId: string) {
   return db.appointments.where("patientId").equals(patientId).sortBy("slotTime")
+}
+
+export async function submitFeedback(
+  appointmentId: string,
+  doctorId: string,
+  patientId: string,
+  rating: number,
+  comment?: string
+): Promise<DoctorFeedback> {
+  await networkDelay(500)
+  const feedback: DoctorFeedback = {
+    id: `fb-${Date.now()}`,
+    appointmentId,
+    doctorId,
+    patientId,
+    rating,
+    comment,
+    createdAt: new Date().toISOString(),
+  }
+  await db.feedback.put(feedback)
+  return feedback
+}
+
+export async function getFeedbackForAppointment(appointmentId: string) {
+  const feedback = await db.feedback.where("appointmentId").equals(appointmentId).first()
+  return feedback ?? null
 }
 
 export async function getHealthRecords(patientId: string) {

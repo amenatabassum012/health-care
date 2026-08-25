@@ -258,7 +258,7 @@ export function DoctorRegisterPage() {
               <p className="text-xs text-muted-foreground">{t("doctor.register.credentialUploadHint")}</p>
               <label className="flex cursor-pointer flex-col items-center gap-2 rounded-xl border-2 border-dashed border-border bg-muted/60 px-4 py-6 text-center hover:border-brand-blue">
                 {fileName ? <FileCheck2 className="size-6 text-success" /> : <UploadCloud className="size-6 text-muted-foreground" />}
-                <span className="text-sm font-medium text-foreground">{fileName ?? "Choose file"}</span>
+                <span className="text-sm font-medium text-foreground">{fileName ?? t("doctor.profile.chooseFile")}</span>
                 <input
                   type="file"
                   className="hidden"

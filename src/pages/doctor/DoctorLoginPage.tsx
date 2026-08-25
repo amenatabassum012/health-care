@@ -64,7 +64,7 @@ export function DoctorLoginPage() {
               id="staffId"
               value={staffId}
               onChange={(e) => setStaffId(e.target.value)}
-              placeholder="9876500011"
+              placeholder={t("doctor.login.staffIdPlaceholder")}
               className="h-11"
             />
           </div>
@@ -74,7 +74,7 @@ export function DoctorLoginPage() {
               id="facilityCode"
               value={facilityCode}
               onChange={(e) => setFacilityCode(e.target.value)}
-              placeholder="FAC-PHC-001"
+              placeholder={t("doctor.login.facilityCodePlaceholder")}
               className="h-11"
             />
           </div>
@@ -96,7 +96,7 @@ export function DoctorLoginPage() {
           </Link>
         </p>
         <p className="mt-3 text-center text-[11px] text-muted-foreground">
-          Demo: try any number, or leave blank and log in to see the verified-doctor dashboard.
+          {t("doctor.login.demoHint")}
         </p>
       </div>
     </div>

@@ -1,28 +1,111 @@
 import { useState } from "react"
 import { useTranslation } from "react-i18next"
 import { useMutation, useQuery } from "@tanstack/react-query"
-import { CalendarClock, Hospital, MapPin, Video } from "lucide-react"
+import { CalendarClock, Clock, ExternalLink, Hospital, MapPin, Star, Users, Video } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { getFacilities } from "@/lib/api/shared"
+import { getDoctorRatingSummary, getFacilities, getSpecialties, getStaff } from "@/lib/api/shared"
 import { createAppointment } from "@/lib/api/patient"
 import { useSession } from "@/state/session"
 import { facilityLabel } from "@/mocks/facilities"
-import type { AppointmentType, DependentRelation } from "@/types"
+import type { AppointmentType, DependentRelation, Specialty, StaffUser } from "@/types"
 import { cn } from "@/lib/utils"
 
 const RELATIONS: DependentRelation[] = ["Child", "Elder", "Other"]
+
+function DoctorOption({
+  doc,
+  specialty,
+  selected,
+  onSelect,
+  t,
+}: {
+  doc: StaffUser
+  specialty?: Specialty
+  selected: boolean
+  onSelect: () => void
+  t: (key: string, opts?: Record<string, unknown>) => string
+}) {
+  const { data: ratingSummary } = useQuery({
+    queryKey: ["doctor-rating", doc.id],
+    queryFn: () => getDoctorRatingSummary(doc.id),
+  })
+  const topQualification = doc.qualifications?.[doc.qualifications.length - 1]
+
+  return (
+    <div
+      onClick={onSelect}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => e.key === "Enter" && onSelect()}
+      className={cn(
+        "w-full cursor-pointer rounded-xl border-2 px-4 py-3 text-left",
+        selected ? "border-teal bg-mint" : "border-border bg-card"
+      )}
+    >
+      <div className="flex items-start justify-between gap-2">
+        <div className="min-w-0">
+          <p className="truncate text-sm font-semibold text-foreground">{doc.name}</p>
+          <p className="truncate text-xs text-muted-foreground">
+            {specialty?.label}
+            {topQualification ? ` · ${topQualification.degree}` : ""}
+          </p>
+        </div>
+        {doc.consultationFeeInr !== undefined && (
+          <span className="shrink-0 text-sm font-bold text-teal-dark">₹{doc.consultationFeeInr}</span>
+        )}
+      </div>
+
+      <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
+        {ratingSummary?.rating !== undefined && (
+          <span className="flex items-center gap-1">
+            <Star className="size-3.5 fill-warning text-warning" />
+            <span className="font-semibold text-foreground">{ratingSummary.rating}</span>
+            {ratingSummary.ratingCount !== undefined && <span>({ratingSummary.ratingCount})</span>}
+          </span>
+        )}
+        {doc.availability && (
+          <span className="flex items-center gap-1">
+            <Clock className="size-3.5" />
+            {doc.availability}
+          </span>
+        )}
+      </div>
+
+      <a
+        href={`/patient/doctor/${doc.id}`}
+        target="_blank"
+        rel="noreferrer"
+        onClick={(e) => e.stopPropagation()}
+        className="mt-2 flex items-center gap-1 text-xs font-medium text-teal hover:underline"
+      >
+        {t("patient.booking.viewProfile")}
+        <ExternalLink className="size-3" />
+      </a>
+    </div>
+  )
+}
 
 export function BookingPage() {
   const { t } = useTranslation()
   const { patient } = useSession()
   const [type, setType] = useState<AppointmentType>("InPerson")
   const [facilityId, setFacilityId] = useState<string | null>(null)
+  const [doctorId, setDoctorId] = useState<string | null>(null)
   const [bookedForName, setBookedForName] = useState("")
   const [bookedForRelation, setBookedForRelation] = useState<DependentRelation>("Child")
 
   const { data: facilities } = useQuery({ queryKey: ["facilities"], queryFn: getFacilities })
+  const { data: staff } = useQuery({ queryKey: ["staff"], queryFn: getStaff })
+  const { data: specialties } = useQuery({ queryKey: ["specialties"], queryFn: getSpecialties })
+
+  const availableDoctors = staff?.filter(
+    (s) =>
+      s.facilityId === facilityId &&
+      s.verificationStatus === "Verified" &&
+      (s.role === "Doctor" || s.role === "Specialist")
+  )
 
   const bookMutation = useMutation({
     mutationFn: () =>
@@ -30,6 +113,7 @@ export function BookingPage() {
         patient!.id,
         facilityId!,
         type,
+        doctorId ?? undefined,
         patient?.isGuardianManaged && bookedForName
           ? { name: bookedForName, relation: bookedForRelation }
           : undefined
@@ -101,7 +185,10 @@ export function BookingPage() {
             <button
               key={f.id}
               type="button"
-              onClick={() => setFacilityId(f.id)}
+              onClick={() => {
+                setFacilityId(f.id)
+                setDoctorId(null)
+              }}
               className={cn(
                 "flex w-full items-center justify-between rounded-xl border-2 px-4 py-3 text-left",
                 facilityId === f.id ? "border-teal bg-mint" : "border-border bg-card"
@@ -117,6 +204,47 @@ export function BookingPage() {
           ))}
         </div>
       </div>
+
+      {facilityId && (
+        <div>
+          <p className="mb-3 text-sm font-semibold text-foreground">{t("patient.booking.chooseDoctor")}</p>
+          <div className="space-y-2.5">
+            <button
+              type="button"
+              onClick={() => setDoctorId(null)}
+              className={cn(
+                "flex w-full items-center gap-3 rounded-xl border-2 px-4 py-3 text-left",
+                doctorId === null ? "border-teal bg-mint" : "border-border bg-card"
+              )}
+            >
+              <span className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
+                <Users className="size-5" />
+              </span>
+              <span>
+                <span className="block text-sm font-semibold text-foreground">{t("patient.booking.anyDoctor")}</span>
+                <span className="block text-xs text-muted-foreground">{t("patient.booking.anyDoctorDesc")}</span>
+              </span>
+            </button>
+
+            {availableDoctors?.map((doc) => (
+              <DoctorOption
+                key={doc.id}
+                doc={doc}
+                specialty={specialties?.find((s) => s.id === doc.specialtyId)}
+                selected={doctorId === doc.id}
+                onSelect={() => setDoctorId(doc.id)}
+                t={t}
+              />
+            ))}
+
+            {availableDoctors?.length === 0 && (
+              <p className="rounded-xl border border-dashed border-border p-3 text-center text-xs text-muted-foreground">
+                {t("patient.booking.noDoctorsListed")}
+              </p>
+            )}
+          </div>
+        </div>
+      )}
 
       {patient?.isGuardianManaged && (
         <div className="space-y-3 rounded-2xl border border-teal/30 bg-mint/40 p-4">

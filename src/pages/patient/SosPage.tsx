@@ -49,7 +49,7 @@ export function SosPage() {
               <PhoneCall className="size-4" />
               {t("patient.sos.routedTo")} {mutation.data.routedFacilityName}
             </p>
-            <p className="mt-1 text-xs text-muted-foreground">ETA ~{mutation.data.etaMinutes} min</p>
+            <p className="mt-1 text-xs text-muted-foreground">{t("patient.sos.eta", { minutes: mutation.data.etaMinutes })}</p>
           </div>
           <p className="flex items-center justify-center gap-1.5 text-xs text-muted-foreground">
             <MessageSquareWarning className="size-3.5" />

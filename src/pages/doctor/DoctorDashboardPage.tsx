@@ -17,6 +17,13 @@ const URGENCY_TONE: Record<TriageUrgency, StatusTone> = {
   SelfCare: "completed",
 }
 
+const URGENCY_RESULT_KEY: Record<TriageUrgency, string> = {
+  Emergency: "emergency",
+  InPerson: "inPerson",
+  Teleconsult: "teleconsult",
+  SelfCare: "selfCare",
+}
+
 export function DoctorDashboardPage() {
   const { t } = useTranslation()
   const { staff } = useSession()
@@ -70,7 +77,7 @@ export function DoctorDashboardPage() {
               </div>
               <div className="flex items-center gap-2">
                 {appt.urgency === "Emergency" && <Siren className="size-4 text-coral" />}
-                <StatusBadge tone={URGENCY_TONE[appt.urgency]} label={t(`patient.triage.result.${appt.urgency === "InPerson" ? "inPerson" : appt.urgency.toLowerCase()}`)} />
+                <StatusBadge tone={URGENCY_TONE[appt.urgency]} label={t(`patient.triage.result.${URGENCY_RESULT_KEY[appt.urgency]}`)} />
                 <ChevronRight className="size-4 text-muted-foreground" />
               </div>
             </Link>

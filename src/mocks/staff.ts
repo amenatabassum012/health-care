@@ -15,6 +15,10 @@ export const MOCK_STAFF: StaffUser[] = [
       { id: "qual-001", degree: "MBBS", institution: "AIIMS Rishikesh", year: "2010" },
       { id: "qual-002", degree: "MD — Gynaecology & Obstetrics", institution: "AIIMS Delhi", year: "2014", fileName: "md_gynae_certificate.pdf" },
     ],
+    consultationFeeInr: 200,
+    availability: "Mon–Sat, 10:00 AM – 4:00 PM",
+    rating: 4.7,
+    ratingCount: 128,
   },
   {
     id: "staff-002",
@@ -29,6 +33,10 @@ export const MOCK_STAFF: StaffUser[] = [
     qualifications: [
       { id: "qual-003", degree: "MBBS", institution: "King George's Medical University", year: "2012", fileName: "mbbs_degree.pdf" },
     ],
+    consultationFeeInr: 100,
+    availability: "Mon–Sat, 9:00 AM – 2:00 PM",
+    rating: 4.4,
+    ratingCount: 76,
   },
   {
     id: "staff-003",

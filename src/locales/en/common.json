@@ -127,6 +127,11 @@
       "title": "Book appointment",
       "chooseFacility": "Choose a facility",
       "chooseSlot": "Choose a time",
+      "chooseDoctor": "Choose a doctor",
+      "anyDoctor": "Any available doctor",
+      "anyDoctorDesc": "We'll assign the next available doctor at this facility",
+      "viewProfile": "View full profile",
+      "noDoctorsListed": "No doctors listed at this facility yet",
       "inPerson": "In-person visit",
       "teleconsult": "Teleconsultation",
       "confirm": "Confirm booking",
@@ -152,7 +157,8 @@
       "audioOnly": "Audio only",
       "requestCallback": "Network too weak. Request a callback instead?",
       "requestCallbackButton": "Request callback",
-      "endCall": "End consultation"
+      "endCall": "End consultation",
+      "simulateWeakNetwork": "Simulate weak network"
     },
     "appointments": {
       "title": "My appointments",
@@ -167,6 +173,10 @@
       "unassignedDoctor": "Doctor to be assigned",
       "verifiedDoctor": "Verified doctor",
       "bookedFor": "Booked for {{name}} ({{relation}})",
+      "rateVisit": "Rate this visit",
+      "commentPlaceholder": "Anything you'd like to share? (optional)",
+      "submitRating": "Submit rating",
+      "yourRating": "Your rating",
       "status": {
         "Booked": "Booked",
         "InQueue": "In queue",
@@ -178,7 +188,12 @@
     "doctorProfile": {
       "notFound": "Doctor profile not found",
       "verifiedNote": "This doctor's credentials are verified",
-      "unverifiedNote": "This doctor's credentials are still under review"
+      "unverifiedNote": "This doctor's credentials are still under review",
+      "consultationFee": "Consultation fee",
+      "availability": "Availability",
+      "rating": "Rating",
+      "reviews": "{{count}} reviews",
+      "noRatingYet": "No ratings yet"
     },
     "records": {
       "title": "My health records",
@@ -211,6 +226,7 @@
       "confirm": "Send emergency alert",
       "calling": "Alerting the nearest facility…",
       "routedTo": "Help is on the way from",
+      "eta": "ETA ~{{minutes}} min",
       "fallbackSms": "If this doesn't go through, we'll also send an SMS alert automatically."
     }
   },
@@ -224,7 +240,10 @@
       "login": "Log in",
       "noAccount": "New staff member?",
       "register": "Register here",
-      "pendingBlock": "Your account is still Pending Verification. You cannot log in until a facility admin approves it."
+      "pendingBlock": "Your account is still Pending Verification. You cannot log in until a facility admin approves it.",
+      "demoHint": "Demo: try any number, or leave blank and log in to see the verified-doctor dashboard.",
+      "staffIdPlaceholder": "9876500011",
+      "facilityCodePlaceholder": "FAC-PHC-001"
     },
     "register": {
       "title": "Staff registration",
@@ -282,7 +301,25 @@
       "referralDoctorAny": "Any verified doctor at that facility",
       "referralDoctorNone": "No verified doctor there yet for this specialty — the facility's queue will triage it",
       "checkAvailability": "Check availability before referring",
-      "saveConsultation": "Save consultation"
+      "saveConsultation": "Save consultation",
+      "consultationSaved": "Consultation saved — the patient can now rate this visit",
+      "appointmentLabel": "Appointment #{{id}}",
+      "medicinePlaceholder": "Medicine",
+      "dosagePlaceholder": "Dosage",
+      "diagnosticPlaceholder": "e.g. Chest X-ray",
+      "unknownPatient": "Unknown patient",
+      "diagnoses": [
+        "Upper Respiratory Infection",
+        "Hypertension",
+        "Type 2 Diabetes",
+        "Anaemia",
+        "Antenatal Check-up — Normal",
+        "Antenatal Check-up — High Risk",
+        "Acute Gastroenteritis",
+        "Lower Respiratory Infection",
+        "Dermatitis",
+        "Malnutrition (Child)"
+      ]
     },
     "patients": {
       "title": "My patients",
@@ -309,6 +346,7 @@
       "noQualifications": "No qualifications added yet",
       "qualificationAdded": "Qualification added",
       "degree": "Degree / certification",
+      "degreePlaceholder": "e.g. MBBS",
       "institution": "Institution",
       "year": "Year completed",
       "certificateUpload": "Certificate (optional)",
@@ -325,7 +363,9 @@
       "stockStatus": "Medicine & diagnostic stock",
       "qualityMetrics": "Quality metrics",
       "avgWait": "Average wait time",
-      "nothingPending": "Nothing pending review"
+      "nothingPending": "Nothing pending review",
+      "nmcRegistration": "NMC/SMC: {{number}}",
+      "defaultCredentialFileName": "credential_scan.jpg"
     }
   },
   "status": {

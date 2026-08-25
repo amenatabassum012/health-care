@@ -4,18 +4,21 @@ import { useQuery } from "@tanstack/react-query"
 import {
   ArrowLeft,
   Award,
+  Clock,
   FileCheck2,
   GraduationCap,
+  IndianRupee,
   MapPin,
   ShieldAlert,
   ShieldCheck,
   ShieldX,
+  Star,
 } from "lucide-react"
 import { StatusBadge, type StatusTone } from "@/components/shared/StatusBadge"
 import { EmptyState } from "@/components/shared/EmptyState"
 import { AllCaughtUp } from "@/components/illustrations/AllCaughtUp"
 import { CertificateViewButton } from "@/components/shared/CertificateViewButton"
-import { getFacilities, getSpecialties, getStaffById } from "@/lib/api/shared"
+import { getDoctorRatingSummary, getFacilities, getSpecialties, getStaffById } from "@/lib/api/shared"
 import type { VerificationStatus } from "@/types"
 
 const VERIFICATION_TONE: Record<VerificationStatus, StatusTone> = {
@@ -42,6 +45,11 @@ export function DoctorProfilePage() {
   })
   const { data: facilities } = useQuery({ queryKey: ["facilities"], queryFn: getFacilities })
   const { data: specialties } = useQuery({ queryKey: ["specialties"], queryFn: getSpecialties })
+  const { data: ratingSummary } = useQuery({
+    queryKey: ["doctor-rating", doctorId],
+    queryFn: () => getDoctorRatingSummary(doctorId!),
+    enabled: !!doctorId,
+  })
 
   const backButton = (
     <button
@@ -81,6 +89,19 @@ export function DoctorProfilePage() {
               {doctor.role}
               {specialty ? ` · ${specialty.label}` : ""}
             </p>
+            {ratingSummary?.rating !== undefined ? (
+              <p className="mt-0.5 flex items-center gap-1 text-sm">
+                <Star className="size-3.5 fill-warning text-warning" />
+                <span className="font-semibold text-foreground">{ratingSummary.rating}</span>
+                <span className="text-muted-foreground">
+                  {ratingSummary.ratingCount !== undefined
+                    ? t("patient.doctorProfile.reviews", { count: ratingSummary.ratingCount })
+                    : ""}
+                </span>
+              </p>
+            ) : (
+              <p className="mt-0.5 text-xs text-muted-foreground">{t("patient.doctorProfile.noRatingYet")}</p>
+            )}
             {facility && (
               <p className="mt-0.5 flex items-center gap-1.5 text-sm text-muted-foreground">
                 <MapPin className="size-3.5 shrink-0" />
@@ -100,6 +121,29 @@ export function DoctorProfilePage() {
             : t("patient.doctorProfile.unverifiedNote")}
         </p>
       </div>
+
+      {(doctor.consultationFeeInr !== undefined || doctor.availability) && (
+        <div className="grid grid-cols-2 gap-3">
+          {doctor.consultationFeeInr !== undefined && (
+            <div className="rounded-2xl border border-border bg-card p-4">
+              <p className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+                <IndianRupee className="size-3.5" />
+                {t("patient.doctorProfile.consultationFee")}
+              </p>
+              <p className="mt-1 text-lg font-bold text-teal-dark">₹{doctor.consultationFeeInr}</p>
+            </div>
+          )}
+          {doctor.availability && (
+            <div className="rounded-2xl border border-border bg-card p-4">
+              <p className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+                <Clock className="size-3.5" />
+                {t("patient.doctorProfile.availability")}
+              </p>
+              <p className="mt-1 text-sm font-semibold text-foreground">{doctor.availability}</p>
+            </div>
+          )}
+        </div>
+      )}
 
       <div className="rounded-2xl border border-border bg-card p-5">
         <h2 className="mb-3 flex items-center gap-2 text-sm font-bold tracking-wide text-muted-foreground uppercase">

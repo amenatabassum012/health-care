@@ -66,10 +66,10 @@ export function TeleconsultPage() {
           <Button
             variant="outline"
             size="icon-xl"
-            aria-label="Simulate weak network"
+            aria-label={t("patient.teleconsult.simulateWeakNetwork")}
             className="border-white/30 bg-white/10 text-white hover:bg-white/20"
             onClick={() => setWeakNetwork((v) => !v)}
-            title="Simulate weak network"
+            title={t("patient.teleconsult.simulateWeakNetwork")}
           >
             <VideoOff className="size-5" />
           </Button>

@@ -80,7 +80,7 @@ export function FacilityDashboardPage() {
           icon={Gauge}
           tone="success"
           label={t("doctor.admin.avgWait")}
-          value={data ? `${data.avgWaitMinutes} min` : "—"}
+          value={data ? `${data.avgWaitMinutes} ${t("patient.booking.minutes")}` : "—"}
         />
       </div>
 

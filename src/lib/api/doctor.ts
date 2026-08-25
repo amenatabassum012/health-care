@@ -1,7 +1,7 @@
 import { db } from "@/lib/db"
 import { MOCK_APPOINTMENT, MOCK_APPOINTMENTS, MOCK_PATIENT_DIRECTORY, MOCK_REFERRALS } from "@/mocks/patients"
 import { MOCK_STAFF } from "@/mocks/staff"
-import type { Qualification, Referral, ReferralUrgency, StaffRole, StaffUser } from "@/types"
+import type { Appointment, Qualification, Referral, ReferralUrgency, StaffRole, StaffUser } from "@/types"
 import { networkDelay } from "./delay"
 
 export interface StaffRegistrationInput {
@@ -86,6 +86,24 @@ export async function getDoctorQueue(_facilityId: string) {
       urgency: "Emergency" as const,
     },
   ]
+}
+
+/**
+ * Marks the consultation done — this is the trigger that lets the patient
+ * rate the visit, so the appointment moves to Completed in both the shared
+ * mock store and the offline cache the patient side reads from.
+ */
+export async function completeConsultation(appointment: Appointment): Promise<Appointment> {
+  await networkDelay(500)
+  const completed: Appointment = { ...appointment, status: "Completed" }
+  const idx = MOCK_APPOINTMENTS.findIndex((a) => a.id === completed.id)
+  if (idx >= 0) {
+    MOCK_APPOINTMENTS[idx] = completed
+  } else {
+    MOCK_APPOINTMENTS.push(completed)
+  }
+  await db.appointments.put(completed)
+  return completed
 }
 
 export async function getReferralInbox(facilityId: string) {

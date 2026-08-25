@@ -1,9 +1,9 @@
 import { useState } from "react"
-import { useParams } from "react-router-dom"
+import { useNavigate, useParams } from "react-router-dom"
 import { useTranslation } from "react-i18next"
-import { useMutation, useQuery } from "@tanstack/react-query"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
-import { GitBranch, Plus, Search, Stethoscope, Trash2, X } from "lucide-react"
+import { CheckCircle2, GitBranch, Plus, Search, Stethoscope, Trash2, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -18,23 +18,10 @@ import {
 import { StatusBadge, type StatusTone } from "@/components/shared/StatusBadge"
 import { getFacilities, getSpecialties, getStaff } from "@/lib/api/shared"
 import { searchStock } from "@/lib/api/patient"
-import { createReferral, getDoctorQueue } from "@/lib/api/doctor"
+import { completeConsultation, createReferral, getDoctorQueue } from "@/lib/api/doctor"
 import { MOCK_HEALTH_RECORDS } from "@/mocks/patients"
 import { useSession } from "@/state/session"
 import type { PrescriptionItem, ReferralUrgency } from "@/types"
-
-const COMMON_DIAGNOSES = [
-  "Upper Respiratory Infection",
-  "Hypertension",
-  "Type 2 Diabetes",
-  "Anaemia",
-  "Antenatal Check-up — Normal",
-  "Antenatal Check-up — High Risk",
-  "Acute Gastroenteritis",
-  "Lower Respiratory Infection",
-  "Dermatitis",
-  "Malnutrition (Child)",
-]
 
 const URGENCY_TONE: Record<ReferralUrgency, StatusTone> = {
   Routine: "info",
@@ -46,6 +33,10 @@ export function ConsultationPage() {
   const { appointmentId } = useParams()
   const { t } = useTranslation()
   const { staff } = useSession()
+  const navigate = useNavigate()
+  const queryClient = useQueryClient()
+
+  const commonDiagnoses = t("doctor.consultation.diagnoses", { returnObjects: true }) as string[]
 
   const [diagnosisQuery, setDiagnosisQuery] = useState("")
   const [diagnoses, setDiagnoses] = useState<string[]>([])
@@ -73,6 +64,16 @@ export function ConsultationPage() {
   })
 
   const currentPatient = queue?.find((a) => a.id === appointmentId)
+
+  const completeMutation = useMutation({
+    mutationFn: () => completeConsultation(currentPatient!),
+    onSuccess: () => {
+      toast.success(t("doctor.consultation.consultationSaved"))
+      queryClient.invalidateQueries({ queryKey: ["doctor-queue"] })
+      navigate("/doctor/dashboard")
+    },
+  })
+
   const referralDoctorOptions = staffDirectory?.filter(
     (s) =>
       s.facilityId === refFacility &&
@@ -92,7 +93,7 @@ export function ConsultationPage() {
     },
   })
 
-  const filteredDiagnoses = COMMON_DIAGNOSES.filter(
+  const filteredDiagnoses = commonDiagnoses.filter(
     (d) => d.toLowerCase().includes(diagnosisQuery.toLowerCase()) && !diagnoses.includes(d)
   )
 
@@ -115,7 +116,7 @@ export function ConsultationPage() {
     }
     referralMutation.mutate({
       patientId: currentPatient?.patientId ?? "unknown",
-      patientName: currentPatient?.patientName ?? "Unknown patient",
+      patientName: currentPatient?.patientName ?? t("doctor.consultation.unknownPatient"),
       fromFacilityId: staff.facilityId,
       fromDoctorId: staff.id,
       toFacilityId: refFacility,
@@ -131,7 +132,7 @@ export function ConsultationPage() {
       <div className="space-y-6">
         <div>
           <h1 className="text-xl font-bold text-foreground">{t("doctor.consultation.title")}</h1>
-          <p className="text-xs text-muted-foreground">Appointment #{appointmentId}</p>
+          <p className="text-xs text-muted-foreground">{t("doctor.consultation.appointmentLabel", { id: appointmentId })}</p>
         </div>
 
         <div className="rounded-2xl border border-border bg-card p-5">
@@ -188,13 +189,13 @@ export function ConsultationPage() {
             {prescription.map((row, i) => (
               <div key={i} className="grid grid-cols-[1fr_90px_70px_auto] gap-2">
                 <Input
-                  placeholder="Medicine"
+                  placeholder={t("doctor.consultation.medicinePlaceholder")}
                   value={row.medicine}
                   onChange={(e) => updateRow(i, { medicine: e.target.value })}
                   className="h-9"
                 />
                 <Input
-                  placeholder="Dosage"
+                  placeholder={t("doctor.consultation.dosagePlaceholder")}
                   value={row.dosage}
                   onChange={(e) => updateRow(i, { dosage: e.target.value })}
                   className="h-9"
@@ -222,7 +223,7 @@ export function ConsultationPage() {
             <Input
               value={stockQuery}
               onChange={(e) => setStockQuery(e.target.value)}
-              placeholder="e.g. Chest X-ray"
+              placeholder={t("doctor.consultation.diagnosticPlaceholder")}
               className="h-10 pl-10"
             />
           </div>
@@ -324,8 +325,14 @@ export function ConsultationPage() {
           </div>
         )}
 
-        <Button size="xl" className="w-full bg-teal text-white hover:bg-teal-dark">
-          {t("doctor.consultation.saveConsultation")}
+        <Button
+          size="xl"
+          className="w-full bg-teal text-white hover:bg-teal-dark"
+          disabled={!currentPatient || completeMutation.isPending}
+          onClick={() => completeMutation.mutate()}
+        >
+          <CheckCircle2 className="size-4" />
+          {completeMutation.isPending ? t("common.loading") : t("doctor.consultation.saveConsultation")}
         </Button>
       </div>
 

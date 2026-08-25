@@ -204,7 +204,7 @@ export function ProfilePage() {
           <div className="mt-4 space-y-3 rounded-xl border border-brand-blue/30 bg-brand-blue/5 p-4">
             <div className="space-y-1.5">
               <Label className="text-xs">{t("doctor.profile.degree")}</Label>
-              <Input value={degree} onChange={(e) => setDegree(e.target.value)} className="h-10" placeholder="e.g. MBBS" />
+              <Input value={degree} onChange={(e) => setDegree(e.target.value)} className="h-10" placeholder={t("doctor.profile.degreePlaceholder")} />
             </div>
             <div className="grid gap-3 sm:grid-cols-2">
               <div className="space-y-1.5">

@@ -52,6 +52,10 @@ export interface StaffUser {
   qualifications?: Qualification[]
   verificationStatus: VerificationStatus
   rejectionReason?: string
+  consultationFeeInr?: number
+  availability?: string
+  rating?: number
+  ratingCount?: number
 }
 
 export interface Patient {
@@ -170,6 +174,16 @@ export interface FollowUpTask {
   dueAt: string
   channel: "App" | "SMS" | "Call"
   status: "Pending" | "Reached" | "Missed"
+}
+
+export interface DoctorFeedback {
+  id: string
+  appointmentId: string
+  doctorId: string
+  patientId: string
+  rating: number
+  comment?: string
+  createdAt: string
 }
 
 export interface FacilityQualityMetrics {

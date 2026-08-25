@@ -64,11 +64,11 @@ export function AdminVerificationPage() {
               </p>
               <div className="mt-3 space-y-1 text-xs text-muted-foreground">
                 <p>{s.phone} · {s.email}</p>
-                <p>NMC/SMC: {s.nmcRegistrationNo}</p>
+                <p>{t("doctor.admin.nmcRegistration", { number: s.nmcRegistrationNo })}</p>
                 <div className="flex items-center gap-2">
                   <p className="flex items-center gap-1.5">
                     <FileCheck2 className="size-3.5" />
-                    {s.credentialFileName ?? "credential_scan.jpg"}
+                    {s.credentialFileName ?? t("doctor.admin.defaultCredentialFileName")}
                   </p>
                   <CertificateViewButton
                     certificateId={s.id}

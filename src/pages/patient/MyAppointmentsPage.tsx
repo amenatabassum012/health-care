@@ -1,14 +1,17 @@
+import { useState } from "react"
 import { useTranslation } from "react-i18next"
-import { useQuery } from "@tanstack/react-query"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { Link } from "react-router-dom"
-import { CalendarClock, MapPin, ShieldCheck, Users, Video } from "lucide-react"
+import { CalendarClock, MapPin, ShieldCheck, Star, Users, Video } from "lucide-react"
 import { EmptyState } from "@/components/shared/EmptyState"
 import { AllCaughtUp } from "@/components/illustrations/AllCaughtUp"
 import { StatusBadge, type StatusTone } from "@/components/shared/StatusBadge"
-import { getAppointments } from "@/lib/api/patient"
+import { Button } from "@/components/ui/button"
+import { Textarea } from "@/components/ui/textarea"
+import { getAppointments, getFeedbackForAppointment, submitFeedback } from "@/lib/api/patient"
 import { getFacilities, getStaff } from "@/lib/api/shared"
 import { useSession } from "@/state/session"
-import type { Appointment, AppointmentStatus } from "@/types"
+import type { Appointment, AppointmentStatus, Facility, StaffUser } from "@/types"
 import { cn } from "@/lib/utils"
 
 const STATUS_TONE: Record<AppointmentStatus, StatusTone> = {
@@ -21,6 +24,176 @@ const STATUS_TONE: Record<AppointmentStatus, StatusTone> = {
 
 function startOfDay(date: Date) {
   return new Date(date.getFullYear(), date.getMonth(), date.getDate())
+}
+
+function AppointmentFeedback({ appointment }: { appointment: Appointment }) {
+  const { t } = useTranslation()
+  const { patient } = useSession()
+  const queryClient = useQueryClient()
+  const [draftRating, setDraftRating] = useState(0)
+  const [comment, setComment] = useState("")
+
+  const { data: existing } = useQuery({
+    queryKey: ["feedback", appointment.id],
+    queryFn: () => getFeedbackForAppointment(appointment.id),
+  })
+
+  const feedbackMutation = useMutation({
+    mutationFn: () =>
+      submitFeedback(appointment.id, appointment.doctorId!, patient!.id, draftRating, comment.trim() || undefined),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["feedback", appointment.id] })
+      queryClient.invalidateQueries({ queryKey: ["doctor-rating", appointment.doctorId] })
+    },
+  })
+
+  if (existing) {
+    return (
+      <div className="mt-3 border-t border-border pt-3">
+        <p className="flex items-center gap-1 text-xs font-medium text-muted-foreground">
+          {t("patient.appointments.yourRating")}
+        </p>
+        <div className="mt-1 flex items-center gap-1">
+          {[1, 2, 3, 4, 5].map((n) => (
+            <Star
+              key={n}
+              className={cn("size-4", n <= existing.rating ? "fill-warning text-warning" : "text-muted-foreground")}
+            />
+          ))}
+        </div>
+        {existing.comment && <p className="mt-1.5 text-sm text-foreground">{existing.comment}</p>}
+      </div>
+    )
+  }
+
+  return (
+    <div className="mt-3 border-t border-border pt-3">
+      <p className="text-xs font-medium text-muted-foreground">{t("patient.appointments.rateVisit")}</p>
+      <div className="mt-1.5 flex items-center gap-1">
+        {[1, 2, 3, 4, 5].map((n) => (
+          <button
+            key={n}
+            type="button"
+            aria-label={String(n)}
+            onClick={() => setDraftRating(n)}
+            className="p-0.5"
+          >
+            <Star className={cn("size-6", n <= draftRating ? "fill-warning text-warning" : "text-muted-foreground")} />
+          </button>
+        ))}
+      </div>
+      {draftRating > 0 && (
+        <div className="mt-2.5 space-y-2">
+          <Textarea
+            value={comment}
+            onChange={(e) => setComment(e.target.value)}
+            placeholder={t("patient.appointments.commentPlaceholder")}
+            rows={2}
+            className="bg-background text-sm"
+          />
+          <Button
+            size="sm"
+            className="bg-teal text-white hover:bg-teal-dark"
+            disabled={feedbackMutation.isPending}
+            onClick={() => feedbackMutation.mutate()}
+          >
+            {feedbackMutation.isPending ? t("common.loading") : t("patient.appointments.submitRating")}
+          </Button>
+        </div>
+      )}
+    </div>
+  )
+}
+
+function AppointmentCard({
+  appointment,
+  facility,
+  doctor,
+  dateFormatter,
+  timeFormatter,
+  t,
+}: {
+  appointment: Appointment
+  facility?: Facility
+  doctor?: StaffUser
+  dateFormatter: Intl.DateTimeFormat
+  timeFormatter: Intl.DateTimeFormat
+  t: (key: string, opts?: Record<string, unknown>) => string
+}) {
+  const slot = new Date(appointment.slotTime)
+
+  return (
+    <div className="rounded-2xl border border-border bg-card p-4">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          {doctor ? (
+            <Link
+              to={`/patient/doctor/${doctor.id}`}
+              className="flex items-center gap-1.5 truncate text-base font-semibold text-foreground hover:underline"
+            >
+              <span className="truncate">{doctor.name}</span>
+              {doctor.verificationStatus === "Verified" && (
+                <ShieldCheck
+                  className="size-4 shrink-0 text-success"
+                  aria-label={t("patient.appointments.verifiedDoctor")}
+                />
+              )}
+            </Link>
+          ) : (
+            <p className="truncate text-base font-semibold text-foreground">
+              {t("patient.appointments.unassignedDoctor")}
+            </p>
+          )}
+          {facility && (
+            <p className="mt-0.5 flex items-center gap-1.5 text-sm text-muted-foreground">
+              <MapPin className="size-3.5 shrink-0" />
+              <span className="truncate">{facility.name}</span>
+            </p>
+          )}
+          {appointment.bookedForName && (
+            <p className="mt-0.5 flex items-center gap-1.5 text-sm font-medium text-teal-dark">
+              <Users className="size-3.5 shrink-0" />
+              <span className="truncate">
+                {t("patient.appointments.bookedFor", {
+                  name: appointment.bookedForName,
+                  relation: t(`patient.booking.bookedFor.${appointment.bookedForRelation?.toLowerCase()}`),
+                })}
+              </span>
+            </p>
+          )}
+        </div>
+        <StatusBadge
+          tone={STATUS_TONE[appointment.status]}
+          label={t(`patient.appointments.status.${appointment.status}`)}
+          className="shrink-0"
+        />
+      </div>
+
+      <div className="mt-3 flex items-center gap-4 text-sm text-foreground">
+        <span className="flex items-center gap-1.5">
+          <CalendarClock className="size-4 text-teal" />
+          {dateFormatter.format(slot)} · {timeFormatter.format(slot)}
+        </span>
+        {appointment.type === "Teleconsult" && (
+          <span className="flex items-center gap-1.5 text-muted-foreground">
+            <Video className="size-4" />
+            {t("patient.teleconsult.title")}
+          </span>
+        )}
+      </div>
+
+      {appointment.status === "InQueue" && appointment.queuePosition !== undefined && (
+        <p className="mt-2 text-sm font-medium text-teal-dark">
+          {t("patient.home.statusQueue")} #{appointment.queuePosition} ·{" "}
+          {appointment.estimatedWaitMinutes} {t("patient.booking.minutes")}
+        </p>
+      )}
+
+      {appointment.status === "Completed" && appointment.doctorId && (
+        <AppointmentFeedback appointment={appointment} />
+      )}
+    </div>
+  )
 }
 
 export function MyAppointmentsPage() {
@@ -59,81 +232,6 @@ export function MyAppointmentsPage() {
     minute: "2-digit",
   })
 
-  function renderAppointment(appointment: Appointment) {
-    const facility = facilities?.find((f) => f.id === appointment.facilityId)
-    const doctor = staff?.find((s) => s.id === appointment.doctorId)
-    const slot = new Date(appointment.slotTime)
-
-    return (
-      <div key={appointment.id} className="rounded-2xl border border-border bg-card p-4">
-        <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0">
-            {doctor ? (
-              <Link
-                to={`/patient/doctor/${doctor.id}`}
-                className="flex items-center gap-1.5 truncate text-base font-semibold text-foreground hover:underline"
-              >
-                <span className="truncate">{doctor.name}</span>
-                {doctor.verificationStatus === "Verified" && (
-                  <ShieldCheck
-                    className="size-4 shrink-0 text-success"
-                    aria-label={t("patient.appointments.verifiedDoctor")}
-                  />
-                )}
-              </Link>
-            ) : (
-              <p className="truncate text-base font-semibold text-foreground">
-                {t("patient.appointments.unassignedDoctor")}
-              </p>
-            )}
-            {facility && (
-              <p className="mt-0.5 flex items-center gap-1.5 text-sm text-muted-foreground">
-                <MapPin className="size-3.5 shrink-0" />
-                <span className="truncate">{facility.name}</span>
-              </p>
-            )}
-            {appointment.bookedForName && (
-              <p className="mt-0.5 flex items-center gap-1.5 text-sm font-medium text-teal-dark">
-                <Users className="size-3.5 shrink-0" />
-                <span className="truncate">
-                  {t("patient.appointments.bookedFor", {
-                    name: appointment.bookedForName,
-                    relation: t(`patient.booking.bookedFor.${appointment.bookedForRelation?.toLowerCase()}`),
-                  })}
-                </span>
-              </p>
-            )}
-          </div>
-          <StatusBadge
-            tone={STATUS_TONE[appointment.status]}
-            label={t(`patient.appointments.status.${appointment.status}`)}
-            className="shrink-0"
-          />
-        </div>
-
-        <div className="mt-3 flex items-center gap-4 text-sm text-foreground">
-          <span className="flex items-center gap-1.5">
-            <CalendarClock className="size-4 text-teal" />
-            {dateFormatter.format(slot)} · {timeFormatter.format(slot)}
-          </span>
-          {appointment.type === "Teleconsult" && (
-            <span className="flex items-center gap-1.5 text-muted-foreground">
-              <Video className="size-4" />
-              {t("patient.teleconsult.title")}
-            </span>
-          )}
-        </div>
-
-        {appointment.status === "InQueue" && appointment.queuePosition !== undefined && (
-          <p className="mt-2 text-sm font-medium text-teal-dark">
-            {t("patient.home.statusQueue")} #{appointment.queuePosition} ·{" "}
-            {appointment.estimatedWaitMinutes} {t("patient.booking.minutes")}
-          </p>
-        )}
-      </div>
-    )
-  }
-
   function renderSection(titleKey: string, items: Appointment[], emptyKey: string) {
     return (
       <div className="space-y-3">
@@ -141,7 +239,19 @@ export function MyAppointmentsPage() {
           {t(titleKey)}
         </h2>
         {items.length ? (
-          <div className={cn("space-y-3")}>{items.map(renderAppointment)}</div>
+          <div className="space-y-3">
+            {items.map((appointment) => (
+              <AppointmentCard
+                key={appointment.id}
+                appointment={appointment}
+                facility={facilities?.find((f) => f.id === appointment.facilityId)}
+                doctor={staff?.find((s) => s.id === appointment.doctorId)}
+                dateFormatter={dateFormatter}
+                timeFormatter={timeFormatter}
+                t={t}
+              />
+            ))}
+          </div>
         ) : (
           <p className="rounded-2xl border border-dashed border-border p-4 text-sm text-muted-foreground">
             {t(emptyKey)}
