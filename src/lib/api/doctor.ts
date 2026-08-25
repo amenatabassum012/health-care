@@ -1,9 +1,11 @@
-import { MOCK_APPOINTMENT, MOCK_REFERRALS } from "@/mocks/patients"
+import { db } from "@/lib/db"
+import { MOCK_APPOINTMENT, MOCK_APPOINTMENTS, MOCK_PATIENT_DIRECTORY, MOCK_REFERRALS } from "@/mocks/patients"
 import { MOCK_STAFF } from "@/mocks/staff"
-import type { StaffRole, StaffUser } from "@/types"
+import type { Qualification, Referral, ReferralUrgency, StaffRole, StaffUser } from "@/types"
 import { networkDelay } from "./delay"
 
 export interface StaffRegistrationInput {
+  id?: string
   name: string
   phone: string
   email: string
@@ -16,10 +18,11 @@ export interface StaffRegistrationInput {
 
 export async function registerStaff(input: StaffRegistrationInput): Promise<StaffUser> {
   await networkDelay(900)
+  const { id, ...rest } = input
   const staff: StaffUser = {
-    id: `staff-${Date.now()}`,
+    id: id ?? `staff-${Date.now()}`,
     verificationStatus: "Pending",
-    ...input,
+    ...rest,
   }
   MOCK_STAFF.push(staff)
   return staff
@@ -88,6 +91,72 @@ export async function getDoctorQueue(_facilityId: string) {
 export async function getReferralInbox(facilityId: string) {
   await networkDelay(400)
   return MOCK_REFERRALS.filter((r) => r.toFacilityId === facilityId)
+}
+
+export interface AddQualificationInput {
+  id?: string
+  staffId: string
+  degree: string
+  institution: string
+  year: string
+  fileName?: string
+}
+
+export async function addQualification(input: AddQualificationInput): Promise<StaffUser> {
+  await networkDelay(600)
+  const staffMember = MOCK_STAFF.find((s) => s.id === input.staffId)
+  if (!staffMember) throw new Error("Staff not found")
+  const qualification: Qualification = {
+    id: input.id ?? `qual-${Date.now()}`,
+    degree: input.degree,
+    institution: input.institution,
+    year: input.year,
+    fileName: input.fileName,
+  }
+  staffMember.qualifications = [...(staffMember.qualifications ?? []), qualification]
+  return staffMember
+}
+
+export async function getDoctorAppointments(doctorId: string) {
+  await networkDelay(400)
+  const appointments = MOCK_APPOINTMENTS.filter((a) => a.doctorId === doctorId).map((a) => ({
+    ...a,
+    patientName: MOCK_PATIENT_DIRECTORY[a.patientId] ?? a.patientId,
+  }))
+  await db.appointments.bulkPut(appointments)
+  return appointments
+}
+
+export interface CreateReferralInput {
+  patientId: string
+  patientName: string
+  fromFacilityId: string
+  fromDoctorId: string
+  toFacilityId: string
+  toDoctorId?: string
+  specialtyId: string
+  urgency: ReferralUrgency
+  structuredSummary: string
+}
+
+export async function createReferral(input: CreateReferralInput): Promise<Referral> {
+  await networkDelay(700)
+  const now = new Date().toISOString()
+  const referral: Referral = {
+    id: `ref-${Date.now()}`,
+    status: "Pending",
+    createdAt: now,
+    updatedAt: now,
+    ...input,
+  }
+  MOCK_REFERRALS.push(referral)
+  await db.referrals.put(referral)
+  return referral
+}
+
+export async function getReferralsMadeByDoctor(doctorId: string) {
+  await networkDelay(400)
+  return MOCK_REFERRALS.filter((r) => r.fromDoctorId === doctorId)
 }
 
 export async function getFacilityMetrics(facilityId: string) {

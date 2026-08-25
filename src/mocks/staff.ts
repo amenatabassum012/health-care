@@ -11,6 +11,10 @@ export const MOCK_STAFF: StaffUser[] = [
     facilityId: "fac-dh-001",
     nmcRegistrationNo: "UK-MCI-44210",
     verificationStatus: "Verified",
+    qualifications: [
+      { id: "qual-001", degree: "MBBS", institution: "AIIMS Rishikesh", year: "2010" },
+      { id: "qual-002", degree: "MD — Gynaecology & Obstetrics", institution: "AIIMS Delhi", year: "2014", fileName: "md_gynae_certificate.pdf" },
+    ],
   },
   {
     id: "staff-002",
@@ -22,6 +26,9 @@ export const MOCK_STAFF: StaffUser[] = [
     facilityId: "fac-phc-001",
     nmcRegistrationNo: "UK-MCI-51872",
     verificationStatus: "Verified",
+    qualifications: [
+      { id: "qual-003", degree: "MBBS", institution: "King George's Medical University", year: "2012", fileName: "mbbs_degree.pdf" },
+    ],
   },
   {
     id: "staff-003",

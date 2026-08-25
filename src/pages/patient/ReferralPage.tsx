@@ -4,7 +4,7 @@ import { Check, Circle, Clock3 } from "lucide-react"
 import { EmptyState } from "@/components/shared/EmptyState"
 import { AllCaughtUp } from "@/components/illustrations/AllCaughtUp"
 import { getReferrals } from "@/lib/api/patient"
-import { getFacilities, getSpecialties } from "@/lib/api/shared"
+import { getFacilities, getSpecialties, getStaff } from "@/lib/api/shared"
 import { useSession } from "@/state/session"
 import type { ReferralStatus } from "@/types"
 import { cn } from "@/lib/utils"
@@ -22,6 +22,7 @@ export function ReferralPage() {
   })
   const { data: facilities } = useQuery({ queryKey: ["facilities"], queryFn: getFacilities })
   const { data: specialties } = useQuery({ queryKey: ["specialties"], queryFn: getSpecialties })
+  const { data: staff } = useQuery({ queryKey: ["staff"], queryFn: getStaff })
 
   return (
     <div className="space-y-6">
@@ -37,15 +38,24 @@ export function ReferralPage() {
           const toFacility = facilities?.find((f) => f.id === r.toFacilityId)
           const fromFacility = facilities?.find((f) => f.id === r.fromFacilityId)
           const specialty = specialties?.find((s) => s.id === r.specialtyId)
+          const fromDoctor = staff?.find((s) => s.id === r.fromDoctorId)
+          const toDoctor = staff?.find((s) => s.id === r.toDoctorId)
 
           return (
             <div key={r.id} className="rounded-2xl border border-border bg-card p-5">
               <p className="text-sm text-muted-foreground">
-                {t("patient.referral.from")} <span className="font-medium text-foreground">{fromFacility?.name}</span>
+                {t("patient.referral.from")}{" "}
+                <span className="font-medium text-foreground">
+                  {fromDoctor ? fromDoctor.name : fromFacility?.name}
+                </span>
+                {fromDoctor && fromFacility && ` · ${fromFacility.name}`}
               </p>
               <p className="mt-0.5 text-base font-semibold text-foreground">
-                {t("patient.referral.referredTo")} {toFacility?.name}
+                {t("patient.referral.referredTo")} {toDoctor ? toDoctor.name : toFacility?.name}
               </p>
+              {toDoctor && toFacility && (
+                <p className="text-sm text-muted-foreground">{toFacility.name}</p>
+              )}
               <p className="text-sm text-muted-foreground">
                 {t("patient.referral.forSpecialty")} {specialty?.label}
               </p>

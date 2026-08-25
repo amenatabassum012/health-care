@@ -2,6 +2,7 @@ import { useTranslation } from "react-i18next"
 import { useQuery } from "@tanstack/react-query"
 import { Link } from "react-router-dom"
 import {
+  CalendarCheck,
   CalendarClock,
   ChevronRight,
   FileClock,
@@ -31,7 +32,10 @@ export function PatientHomePage() {
       </div>
 
       {data?.activeAppointment && (
-        <div className="flex items-center justify-between rounded-2xl border border-teal/30 bg-mint/60 px-4 py-3">
+        <Link
+          to="/patient/appointments"
+          className="flex items-center justify-between rounded-2xl border border-teal/30 bg-mint/60 px-4 py-3"
+        >
           <div className="flex items-center gap-3">
             <StatusBadge tone="confirmed" label={t("patient.home.statusQueue")} />
             <span className="text-lg font-bold text-teal-dark">
@@ -41,7 +45,7 @@ export function PatientHomePage() {
           <span className="text-xs text-muted-foreground">
             {data.activeAppointment.estimatedWaitMinutes} {t("patient.booking.minutes")}
           </span>
-        </div>
+        </Link>
       )}
 
       {data?.latestReferral && (
@@ -76,6 +80,12 @@ export function PatientHomePage() {
       </Link>
 
       <div className="grid gap-3">
+        <ActionCard
+          to="/patient/appointments"
+          icon={CalendarCheck}
+          title={t("patient.home.myAppointments")}
+          description={t("patient.home.myAppointmentsDesc")}
+        />
         <ActionCard
           to="/patient/booking"
           icon={CalendarClock}

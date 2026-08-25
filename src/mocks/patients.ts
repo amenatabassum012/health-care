@@ -10,16 +10,140 @@ export const MOCK_PATIENT: Patient = {
   isGuardianManaged: false,
 }
 
+/**
+ * Stand-in for a patient directory lookup, so doctor-side screens (which only
+ * ever see patientId on an appointment/referral) can resolve a display name
+ * without a full patient record service existing yet.
+ */
+export const MOCK_PATIENT_DIRECTORY: Record<string, string> = {
+  "pat-001": "Suman Devi",
+  "pat-002": "Deepak Kumar",
+  "pat-003": "Baby of Kavita",
+}
+
 export const MOCK_APPOINTMENT: Appointment = {
   id: "appt-001",
   patientId: "pat-001",
   facilityId: "fac-phc-001",
+  doctorId: "staff-006",
   type: "InPerson",
-  slotTime: "2026-08-24T11:30:00+05:30",
+  slotTime: "2026-08-25T11:30:00+05:30",
   queuePosition: 4,
   estimatedWaitMinutes: 35,
   status: "InQueue",
 }
+
+/**
+ * Full appointment history for the logged-in patient — past visits, today's
+ * queue entry, and upcoming bookings — so the "My appointments" dashboard can
+ * show who they visited and who they're going to visit, across time.
+ */
+export const MOCK_APPOINTMENTS: Appointment[] = [
+  {
+    id: "appt-past-001",
+    patientId: "pat-001",
+    facilityId: "fac-sc-001",
+    doctorId: "staff-003",
+    type: "InPerson",
+    slotTime: "2026-07-30T10:00:00+05:30",
+    status: "Completed",
+  },
+  {
+    id: "appt-past-002",
+    patientId: "pat-001",
+    facilityId: "fac-phc-001",
+    doctorId: "staff-002",
+    type: "InPerson",
+    slotTime: "2026-08-22T09:30:00+05:30",
+    status: "Completed",
+  },
+  {
+    id: "appt-past-003",
+    patientId: "pat-001",
+    facilityId: "fac-dh-001",
+    doctorId: "staff-001",
+    type: "InPerson",
+    slotTime: "2026-08-22T15:00:00+05:30",
+    status: "Completed",
+  },
+  MOCK_APPOINTMENT,
+  {
+    id: "appt-future-001",
+    patientId: "pat-001",
+    facilityId: "fac-dh-001",
+    doctorId: "staff-004",
+    type: "InPerson",
+    slotTime: "2026-08-28T10:00:00+05:30",
+    status: "Booked",
+  },
+  {
+    id: "appt-future-002",
+    patientId: "pat-001",
+    facilityId: "fac-phc-001",
+    doctorId: "staff-002",
+    type: "Teleconsult",
+    slotTime: "2026-09-02T16:00:00+05:30",
+    status: "Booked",
+  },
+  {
+    id: "appt-future-005",
+    patientId: "pat-001",
+    facilityId: "fac-phc-001",
+    doctorId: "staff-006",
+    type: "InPerson",
+    slotTime: "2026-08-29T09:30:00+05:30",
+    status: "Booked",
+    bookedForName: "Aarav",
+    bookedForRelation: "Child",
+  },
+  {
+    id: "appt-past-004",
+    patientId: "pat-002",
+    facilityId: "fac-phc-001",
+    doctorId: "staff-002",
+    type: "InPerson",
+    slotTime: "2026-08-20T11:00:00+05:30",
+    status: "Completed",
+  },
+  {
+    id: "appt-today-002",
+    patientId: "pat-002",
+    facilityId: "fac-phc-001",
+    doctorId: "staff-002",
+    type: "InPerson",
+    slotTime: "2026-08-25T14:00:00+05:30",
+    queuePosition: 2,
+    estimatedWaitMinutes: 20,
+    status: "InQueue",
+  },
+  {
+    id: "appt-future-003",
+    patientId: "pat-003",
+    facilityId: "fac-phc-001",
+    doctorId: "staff-002",
+    type: "InPerson",
+    slotTime: "2026-08-27T09:00:00+05:30",
+    status: "Booked",
+  },
+  {
+    id: "appt-past-005",
+    patientId: "pat-003",
+    facilityId: "fac-phc-001",
+    doctorId: "staff-006",
+    type: "InPerson",
+    slotTime: "2026-08-18T10:30:00+05:30",
+    status: "Completed",
+  },
+  {
+    id: "appt-future-004",
+    patientId: "pat-002",
+    facilityId: "fac-phc-001",
+    doctorId: "staff-006",
+    type: "InPerson",
+    slotTime: "2026-08-30T11:00:00+05:30",
+    status: "Booked",
+  },
+]
 
 export const MOCK_REFERRALS: Referral[] = [
   {
@@ -27,7 +151,9 @@ export const MOCK_REFERRALS: Referral[] = [
     patientId: "pat-001",
     patientName: "Suman Devi",
     fromFacilityId: "fac-phc-001",
+    fromDoctorId: "staff-002",
     toFacilityId: "fac-dh-001",
+    toDoctorId: "staff-001",
     specialtyId: "spec-gynae",
     urgency: "Urgent",
     structuredSummary: "28-week ANC visit, elevated BP (142/94), referred for specialist review.",
@@ -40,7 +166,9 @@ export const MOCK_REFERRALS: Referral[] = [
     patientId: "pat-001",
     patientName: "Suman Devi",
     fromFacilityId: "fac-sc-001",
+    fromDoctorId: "staff-003",
     toFacilityId: "fac-phc-001",
+    toDoctorId: "staff-002",
     specialtyId: "spec-general",
     urgency: "Routine",
     structuredSummary: "Persistent cough > 3 weeks, referred for chest X-ray and evaluation.",

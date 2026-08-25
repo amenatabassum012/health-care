@@ -18,6 +18,27 @@ export interface Specialty {
   label: string
 }
 
+export interface Qualification {
+  id: string
+  degree: string
+  institution: string
+  year: string
+  fileName?: string
+}
+
+/**
+ * A certificate/credential file actually uploaded during this session, stored
+ * locally (Dexie/IndexedDB) so it can be reopened for verification. Keyed by
+ * the id of whatever it documents — a StaffUser.id for the primary NMC/SMC
+ * credential, or a Qualification.id for an individual degree certificate.
+ */
+export interface StoredCertificate {
+  id: string
+  fileName: string
+  mimeType: string
+  dataUrl: string
+}
+
 export interface StaffUser {
   id: string
   name: string
@@ -28,6 +49,7 @@ export interface StaffUser {
   facilityId: string
   nmcRegistrationNo: string
   credentialFileName?: string
+  qualifications?: Qualification[]
   verificationStatus: VerificationStatus
   rejectionReason?: string
 }
@@ -62,6 +84,8 @@ export interface TriageSession {
 export type AppointmentType = "Teleconsult" | "InPerson"
 export type AppointmentStatus = "Booked" | "InQueue" | "InProgress" | "Completed" | "Cancelled"
 
+export type DependentRelation = "Child" | "Elder" | "Other"
+
 export interface Appointment {
   id: string
   patientId: string
@@ -72,6 +96,8 @@ export interface Appointment {
   queuePosition?: number
   estimatedWaitMinutes?: number
   status: AppointmentStatus
+  bookedForName?: string
+  bookedForRelation?: DependentRelation
 }
 
 export type ConsultationMode = "Video" | "Audio" | "Callback"
@@ -103,7 +129,9 @@ export interface Referral {
   patientId: string
   patientName: string
   fromFacilityId: string
+  fromDoctorId?: string
   toFacilityId: string
+  toDoctorId?: string
   specialtyId: string
   urgency: ReferralUrgency
   structuredSummary: string

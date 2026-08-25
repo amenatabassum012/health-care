@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { EmptyState } from "@/components/shared/EmptyState"
 import { AllCaughtUp } from "@/components/illustrations/AllCaughtUp"
+import { CertificateViewButton } from "@/components/shared/CertificateViewButton"
 import { approveStaff, getPendingStaff, rejectStaff } from "@/lib/api/doctor"
 import { getSpecialties } from "@/lib/api/shared"
 import { useSession } from "@/state/session"
@@ -64,10 +65,17 @@ export function AdminVerificationPage() {
               <div className="mt-3 space-y-1 text-xs text-muted-foreground">
                 <p>{s.phone} · {s.email}</p>
                 <p>NMC/SMC: {s.nmcRegistrationNo}</p>
-                <p className="flex items-center gap-1.5">
-                  <FileCheck2 className="size-3.5" />
-                  {s.credentialFileName ?? "credential_scan.jpg"}
-                </p>
+                <div className="flex items-center gap-2">
+                  <p className="flex items-center gap-1.5">
+                    <FileCheck2 className="size-3.5" />
+                    {s.credentialFileName ?? "credential_scan.jpg"}
+                  </p>
+                  <CertificateViewButton
+                    certificateId={s.id}
+                    fileName={s.credentialFileName}
+                    label={t("certificate.view")}
+                  />
+                </div>
               </div>
               <div className="mt-4 flex gap-2">
                 <Button

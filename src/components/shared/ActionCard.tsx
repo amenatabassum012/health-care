@@ -23,7 +23,7 @@ export function ActionCard({
   const content = (
     <div
       className={cn(
-        "group flex w-full items-center gap-4 rounded-2xl border p-4 text-left shadow-sm transition-all",
+        "group flex w-full items-center gap-4 rounded-2xl border p-4 text-left shadow-sm transition-[transform,box-shadow,background-color]",
         "hover:-translate-y-0.5 hover:shadow-md active:translate-y-0",
         tone === "emergency"
           ? "border-coral/30 bg-coral/5 hover:bg-coral/10"

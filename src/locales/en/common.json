@@ -47,6 +47,8 @@
     "home": {
       "greeting": "Hello",
       "subtitle": "Health is the greatest gift, contentment the greatest wealth.",
+      "myAppointments": "My appointments",
+      "myAppointmentsDesc": "Past visits and what's coming up",
       "bookAppointment": "Book appointment",
       "bookAppointmentDesc": "Facility visit or teleconsult slot",
       "startTeleconsult": "Start teleconsultation",
@@ -67,6 +69,12 @@
       "startTitle": "Let's understand what's going on",
       "startSubtitle": "A few quick questions in your language — this helps us recommend the right care",
       "start": "Start triage",
+      "info": {
+        "title": "What to expect",
+        "time": "Takes about 2 minutes to complete",
+        "privacy": "Your answers stay private and are only shared with your care team",
+        "language": "Available in your preferred language"
+      },
       "stepOf": "Step {{current}} of {{total}}",
       "q1": {
         "title": "What's the main concern?",
@@ -125,7 +133,16 @@
       "booked": "You're booked",
       "queuePosition": "Queue position",
       "estimatedWait": "Estimated wait",
-      "minutes": "min"
+      "minutes": "min",
+      "bookedFor": {
+        "title": "Who is this visit for?",
+        "name": "Their name",
+        "namePlaceholder": "e.g. Aarav",
+        "child": "Child",
+        "elder": "Elder",
+        "other": "Other",
+        "summary": "Booked for {{name}} ({{relation}})"
+      }
     },
     "teleconsult": {
       "title": "Teleconsultation",
@@ -136,6 +153,32 @@
       "requestCallback": "Network too weak. Request a callback instead?",
       "requestCallbackButton": "Request callback",
       "endCall": "End consultation"
+    },
+    "appointments": {
+      "title": "My appointments",
+      "subtitle": "Everyone you've visited, and everyone you're about to",
+      "empty": "No appointments yet",
+      "today": "Today",
+      "upcoming": "Upcoming",
+      "past": "Past",
+      "noneToday": "Nothing scheduled for today",
+      "noneUpcoming": "No upcoming appointments",
+      "nonePast": "No past visits yet",
+      "unassignedDoctor": "Doctor to be assigned",
+      "verifiedDoctor": "Verified doctor",
+      "bookedFor": "Booked for {{name}} ({{relation}})",
+      "status": {
+        "Booked": "Booked",
+        "InQueue": "In queue",
+        "InProgress": "In progress",
+        "Completed": "Visited",
+        "Cancelled": "Cancelled"
+      }
+    },
+    "doctorProfile": {
+      "notFound": "Doctor profile not found",
+      "verifiedNote": "This doctor's credentials are verified",
+      "unverifiedNote": "This doctor's credentials are still under review"
     },
     "records": {
       "title": "My health records",
@@ -235,8 +278,41 @@
       "referralFacility": "Refer to facility",
       "referralUrgency": "Urgency",
       "referralSummary": "Structured clinical summary",
+      "referralDoctor": "Refer to doctor",
+      "referralDoctorAny": "Any verified doctor at that facility",
+      "referralDoctorNone": "No verified doctor there yet for this specialty — the facility's queue will triage it",
       "checkAvailability": "Check availability before referring",
       "saveConsultation": "Save consultation"
+    },
+    "patients": {
+      "title": "My patients",
+      "subtitle": "Everyone you've seen, and everyone on your schedule",
+      "empty": "No patients assigned to you yet",
+      "noneToday": "No patients today",
+      "noneUpcoming": "No upcoming patients",
+      "nonePast": "No past patients yet",
+      "referredOut": "Patients you've referred to other doctors",
+      "noneReferredOut": "You haven't referred any patients out",
+      "bookedByGuardian": "{{relation}} of {{guardian}} — booked by guardian"
+    },
+    "profile": {
+      "title": "Profile",
+      "subtitle": "Your credentials, as seen by patients and facility admins",
+      "certification": "Certification",
+      "credentialFile": "Credential document",
+      "noCredential": "Not uploaded",
+      "verifiedNote": "Your credentials are verified. Patients see a verified badge with your name.",
+      "pendingNote": "Your credentials are still under review by a facility admin.",
+      "qualifications": "Qualifications & certificates",
+      "qualificationsVisibleNote": "Visible to patients on your public profile",
+      "addQualification": "Add qualification",
+      "noQualifications": "No qualifications added yet",
+      "qualificationAdded": "Qualification added",
+      "degree": "Degree / certification",
+      "institution": "Institution",
+      "year": "Year completed",
+      "certificateUpload": "Certificate (optional)",
+      "chooseFile": "Choose file"
     },
     "admin": {
       "verificationQueue": "Doctor verification queue",
@@ -265,9 +341,15 @@
   },
   "nav": {
     "home": "Home",
+    "appointments": "Appointments",
     "records": "Records",
     "referrals": "Referrals",
     "dashboard": "Dashboard",
     "logout": "Log out"
+  },
+  "certificate": {
+    "view": "View certificate",
+    "noFileTitle": "No document on file",
+    "noFileBody": "Nothing was uploaded for this record yet, so there's nothing to preview."
   }
 }

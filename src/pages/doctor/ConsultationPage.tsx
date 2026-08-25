@@ -1,7 +1,7 @@
 import { useState } from "react"
 import { useParams } from "react-router-dom"
 import { useTranslation } from "react-i18next"
-import { useQuery } from "@tanstack/react-query"
+import { useMutation, useQuery } from "@tanstack/react-query"
 import { toast } from "sonner"
 import { GitBranch, Plus, Search, Stethoscope, Trash2, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -16,8 +16,9 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { StatusBadge, type StatusTone } from "@/components/shared/StatusBadge"
-import { getFacilities, getSpecialties } from "@/lib/api/shared"
+import { getFacilities, getSpecialties, getStaff } from "@/lib/api/shared"
 import { searchStock } from "@/lib/api/patient"
+import { createReferral, getDoctorQueue } from "@/lib/api/doctor"
 import { MOCK_HEALTH_RECORDS } from "@/mocks/patients"
 import { useSession } from "@/state/session"
 import type { PrescriptionItem, ReferralUrgency } from "@/types"
@@ -52,16 +53,43 @@ export function ConsultationPage() {
   const [showReferral, setShowReferral] = useState(false)
   const [refSpecialty, setRefSpecialty] = useState<string | undefined>()
   const [refFacility, setRefFacility] = useState<string | undefined>()
+  const [refDoctor, setRefDoctor] = useState<string | undefined>()
   const [refUrgency, setRefUrgency] = useState<ReferralUrgency>("Routine")
   const [refSummary, setRefSummary] = useState("")
   const [stockQuery, setStockQuery] = useState("")
 
   const { data: facilities } = useQuery({ queryKey: ["facilities"], queryFn: getFacilities })
   const { data: specialties } = useQuery({ queryKey: ["specialties"], queryFn: getSpecialties })
+  const { data: staffDirectory } = useQuery({ queryKey: ["staff"], queryFn: getStaff })
+  const { data: queue } = useQuery({
+    queryKey: ["doctor-queue", staff?.facilityId],
+    queryFn: () => getDoctorQueue(staff!.facilityId),
+    enabled: !!staff,
+  })
   const { data: stockResults } = useQuery({
     queryKey: ["stock-check", staff?.facilityId, stockQuery],
     queryFn: () => searchStock(staff!.facilityId, stockQuery),
     enabled: !!staff && stockQuery.length > 0,
+  })
+
+  const currentPatient = queue?.find((a) => a.id === appointmentId)
+  const referralDoctorOptions = staffDirectory?.filter(
+    (s) =>
+      s.facilityId === refFacility &&
+      s.specialtyId === refSpecialty &&
+      s.verificationStatus === "Verified"
+  )
+
+  const referralMutation = useMutation({
+    mutationFn: createReferral,
+    onSuccess: () => {
+      toast.success(t("doctor.consultation.referral") + " — " + t("patient.referral.pending"))
+      setShowReferral(false)
+      setRefSpecialty(undefined)
+      setRefFacility(undefined)
+      setRefDoctor(undefined)
+      setRefSummary("")
+    },
   })
 
   const filteredDiagnoses = COMMON_DIAGNOSES.filter(
@@ -81,12 +109,21 @@ export function ConsultationPage() {
   }
 
   function submitReferral() {
-    if (!refSpecialty || !refFacility) {
+    if (!refSpecialty || !refFacility || !staff) {
       toast.error(t("doctor.consultation.referral"))
       return
     }
-    toast.success(t("doctor.consultation.referral") + " — " + t("patient.referral.pending"))
-    setShowReferral(false)
+    referralMutation.mutate({
+      patientId: currentPatient?.patientId ?? "unknown",
+      patientName: currentPatient?.patientName ?? "Unknown patient",
+      fromFacilityId: staff.facilityId,
+      fromDoctorId: staff.id,
+      toFacilityId: refFacility,
+      toDoctorId: refDoctor,
+      specialtyId: refSpecialty,
+      urgency: refUrgency,
+      structuredSummary: refSummary,
+    })
   }
 
   return (
@@ -215,7 +252,13 @@ export function ConsultationPage() {
             <div className="grid gap-3 sm:grid-cols-2">
               <div className="space-y-1.5">
                 <Label className="text-xs">{t("doctor.consultation.referralSpecialty")}</Label>
-                <Select value={refSpecialty} onValueChange={(v) => setRefSpecialty(v ?? undefined)}>
+                <Select
+                  value={refSpecialty}
+                  onValueChange={(v) => {
+                    setRefSpecialty(v ?? undefined)
+                    setRefDoctor(undefined)
+                  }}
+                >
                   <SelectTrigger className="h-10 w-full"><SelectValue placeholder="—" /></SelectTrigger>
                   <SelectContent>
                     {specialties?.map((s) => <SelectItem key={s.id} value={s.id}>{s.label}</SelectItem>)}
@@ -224,7 +267,13 @@ export function ConsultationPage() {
               </div>
               <div className="space-y-1.5">
                 <Label className="text-xs">{t("doctor.consultation.referralFacility")}</Label>
-                <Select value={refFacility} onValueChange={(v) => setRefFacility(v ?? undefined)}>
+                <Select
+                  value={refFacility}
+                  onValueChange={(v) => {
+                    setRefFacility(v ?? undefined)
+                    setRefDoctor(undefined)
+                  }}
+                >
                   <SelectTrigger className="h-10 w-full"><SelectValue placeholder="—" /></SelectTrigger>
                   <SelectContent>
                     {facilities?.map((f) => <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>)}
@@ -232,6 +281,24 @@ export function ConsultationPage() {
                 </Select>
               </div>
             </div>
+            {refFacility && refSpecialty && (
+              <div className="mt-3 space-y-1.5">
+                <Label className="text-xs">{t("doctor.consultation.referralDoctor")}</Label>
+                <Select value={refDoctor} onValueChange={(v) => setRefDoctor(v ?? undefined)}>
+                  <SelectTrigger className="h-10 w-full">
+                    <SelectValue placeholder={t("doctor.consultation.referralDoctorAny")} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {referralDoctorOptions?.map((s) => (
+                      <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {referralDoctorOptions?.length === 0 && (
+                  <p className="text-xs text-muted-foreground">{t("doctor.consultation.referralDoctorNone")}</p>
+                )}
+              </div>
+            )}
             <div className="mt-3 space-y-1.5">
               <Label className="text-xs">{t("doctor.consultation.referralUrgency")}</Label>
               <div className="flex gap-2">

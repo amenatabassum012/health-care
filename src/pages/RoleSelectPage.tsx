@@ -31,7 +31,7 @@ export function RoleSelectPage() {
         <div className="mt-10 grid w-full gap-5 sm:grid-cols-2">
           <Link
             to="/patient/language"
-            className="group flex flex-col items-center gap-4 rounded-3xl border border-border bg-card p-8 text-center shadow-sm transition-all hover:-translate-y-1 hover:border-teal hover:shadow-xl"
+            className="group flex flex-col items-center gap-4 rounded-3xl border border-border bg-card p-8 text-center shadow-sm transition-[transform,border-color,box-shadow] hover:-translate-y-1 hover:border-teal hover:shadow-xl"
           >
             <span className="flex size-16 items-center justify-center rounded-2xl bg-mint text-teal-dark transition-colors group-hover:bg-teal group-hover:text-white">
               <UserRound className="size-8" />
@@ -44,7 +44,7 @@ export function RoleSelectPage() {
 
           <Link
             to="/doctor/login"
-            className="group flex flex-col items-center gap-4 rounded-3xl border border-border bg-card p-8 text-center shadow-sm transition-all hover:-translate-y-1 hover:border-brand-blue hover:shadow-xl"
+            className="group flex flex-col items-center gap-4 rounded-3xl border border-border bg-card p-8 text-center shadow-sm transition-[transform,border-color,box-shadow] hover:-translate-y-1 hover:border-brand-blue hover:shadow-xl"
           >
             <span className="flex size-16 items-center justify-center rounded-2xl bg-brand-blue/10 text-brand-blue transition-colors group-hover:bg-brand-blue group-hover:text-white">
               <Stethoscope className="size-8" />

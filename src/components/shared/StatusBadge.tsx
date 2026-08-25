@@ -1,5 +1,5 @@
 import { cn } from "@/lib/utils"
-import { AlertTriangle, CheckCircle2, CircleDashed, Clock3 } from "lucide-react"
+import { AlertTriangle, BadgeCheck, CheckCircle2, Clock3, Info } from "lucide-react"
 
 export type StatusTone = "emergency" | "pending" | "confirmed" | "completed" | "info"
 
@@ -14,9 +14,9 @@ const TONE_STYLES: Record<StatusTone, string> = {
 const TONE_ICON: Record<StatusTone, React.ComponentType<{ className?: string }>> = {
   emergency: AlertTriangle,
   pending: Clock3,
-  confirmed: CircleDashed,
+  confirmed: BadgeCheck,
   completed: CheckCircle2,
-  info: CircleDashed,
+  info: Info,
 }
 
 export function StatusBadge({

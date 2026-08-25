@@ -9,7 +9,10 @@ import {
   CalendarClock,
   CheckCircle2,
   CircleHelp,
+  Clock,
   HeartPulse,
+  Languages,
+  ShieldCheck,
   Siren,
   Sparkles,
   Stethoscope,
@@ -147,6 +150,24 @@ export function TriagePage() {
         <Button size="xl" className="mt-8 w-full max-w-sm bg-teal text-white hover:bg-teal-dark" onClick={() => setStarted(true)}>
           {t("patient.triage.start")}
         </Button>
+
+        <div className="mt-10 w-full max-w-sm space-y-4 rounded-2xl bg-muted p-5 text-left">
+          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            {t("patient.triage.info.title")}
+          </p>
+          <div className="flex items-start gap-3">
+            <Clock className="mt-0.5 size-5 shrink-0 text-teal-dark" />
+            <p className="text-sm text-foreground">{t("patient.triage.info.time")}</p>
+          </div>
+          <div className="flex items-start gap-3">
+            <ShieldCheck className="mt-0.5 size-5 shrink-0 text-teal-dark" />
+            <p className="text-sm text-foreground">{t("patient.triage.info.privacy")}</p>
+          </div>
+          <div className="flex items-start gap-3">
+            <Languages className="mt-0.5 size-5 shrink-0 text-teal-dark" />
+            <p className="text-sm text-foreground">{t("patient.triage.info.language")}</p>
+          </div>
+        </div>
       </div>
     )
   }

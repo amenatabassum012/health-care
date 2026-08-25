@@ -1,9 +1,20 @@
 import { MOCK_FACILITIES, MOCK_SPECIALTIES } from "@/mocks/facilities"
+import { MOCK_STAFF } from "@/mocks/staff"
 import { networkDelay } from "./delay"
 
 export async function getFacilities() {
   await networkDelay(300)
   return MOCK_FACILITIES
+}
+
+export async function getStaff() {
+  await networkDelay(300)
+  return MOCK_STAFF
+}
+
+export async function getStaffById(staffId: string) {
+  await networkDelay(300)
+  return MOCK_STAFF.find((s) => s.id === staffId) ?? null
 }
 
 export async function getSpecialties() {

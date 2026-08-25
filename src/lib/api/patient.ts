@@ -1,6 +1,7 @@
 import { db } from "@/lib/db"
 import {
   MOCK_APPOINTMENT,
+  MOCK_APPOINTMENTS,
   MOCK_FOLLOW_UPS,
   MOCK_HEALTH_RECORDS,
   MOCK_PATIENT,
@@ -54,7 +55,8 @@ export async function getCachedTriageSessions(patientId: string) {
 export async function createAppointment(
   patientId: string,
   facilityId: string,
-  type: Appointment["type"]
+  type: Appointment["type"],
+  bookedFor?: { name: string; relation: Appointment["bookedForRelation"] }
 ): Promise<Appointment> {
   await networkDelay(700)
   const appointment: Appointment = {
@@ -66,9 +68,22 @@ export async function createAppointment(
     queuePosition: Math.floor(Math.random() * 6) + 2,
     estimatedWaitMinutes: Math.floor(Math.random() * 40) + 10,
     status: "InQueue",
+    bookedForName: bookedFor?.name,
+    bookedForRelation: bookedFor?.relation,
   }
   await db.appointments.put(appointment)
   return appointment
+}
+
+export async function getAppointments(patientId: string) {
+  await networkDelay(400)
+  const appointments = MOCK_APPOINTMENTS.filter((a) => a.patientId === patientId)
+  await db.appointments.bulkPut(appointments)
+  return appointments
+}
+
+export async function getCachedAppointments(patientId: string) {
+  return db.appointments.where("patientId").equals(patientId).sortBy("slotTime")
 }
 
 export async function getHealthRecords(patientId: string) {

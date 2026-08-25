@@ -6,7 +6,7 @@ import { StatusBadge, type StatusTone } from "@/components/shared/StatusBadge"
 import { EmptyState } from "@/components/shared/EmptyState"
 import { AllCaughtUp } from "@/components/illustrations/AllCaughtUp"
 import { getDoctorQueue, getReferralInbox } from "@/lib/api/doctor"
-import { getFacilities, getSpecialties } from "@/lib/api/shared"
+import { getFacilities, getSpecialties, getStaff } from "@/lib/api/shared"
 import { useSession } from "@/state/session"
 import type { TriageUrgency } from "@/types"
 
@@ -33,6 +33,7 @@ export function DoctorDashboardPage() {
   })
   const { data: facilities } = useQuery({ queryKey: ["facilities"], queryFn: getFacilities })
   const { data: specialties } = useQuery({ queryKey: ["specialties"], queryFn: getSpecialties })
+  const { data: staffDirectory } = useQuery({ queryKey: ["staff"], queryFn: getStaff })
 
   return (
     <div className="space-y-8">
@@ -89,6 +90,7 @@ export function DoctorDashboardPage() {
           {referrals?.map((r) => {
             const facility = facilities?.find((f) => f.id === r.fromFacilityId)
             const specialty = specialties?.find((s) => s.id === r.specialtyId)
+            const fromDoctor = staffDirectory?.find((s) => s.id === r.fromDoctorId)
             return (
               <div key={r.id} className="rounded-2xl border border-border bg-card p-4">
                 <div className="flex items-center justify-between">
@@ -99,6 +101,7 @@ export function DoctorDashboardPage() {
                   />
                 </div>
                 <p className="mt-1 text-xs text-muted-foreground">
+                  {fromDoctor ? `${fromDoctor.name} · ` : ""}
                   {facility?.name} · {specialty?.label}
                 </p>
                 <p className="mt-2 text-sm text-foreground">{r.structuredSummary}</p>

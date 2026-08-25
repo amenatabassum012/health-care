@@ -37,8 +37,12 @@ export function DoctorLoginPage() {
   }
 
   return (
-    <div className="flex min-h-svh flex-col items-center justify-center bg-gradient-to-b from-brand-blue/5 via-background to-background px-5 py-10">
-      <div className="w-full max-w-sm rounded-3xl border border-border bg-card p-7 shadow-sm">
+    <div
+      className="relative flex min-h-svh flex-col items-center justify-center bg-cover bg-center px-5 py-10"
+      style={{ backgroundImage: "url('https://images.unsplash.com/photo-1576091160550-2173dba999ef?w=1600&auto=format&fit=crop&q=80&ixlib=rb-4.1.0')" }}
+    >
+      <div className="absolute inset-0 bg-gradient-to-b from-brand-blue/5 via-background/40 to-background/65" />
+      <div className="relative w-full max-w-sm rounded-3xl border border-border bg-card p-7 shadow-sm">
         <BrandMark className="mb-6" />
         <span className="flex size-12 items-center justify-center rounded-xl bg-brand-blue/10 text-brand-blue">
           <Stethoscope className="size-6" />

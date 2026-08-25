@@ -41,8 +41,12 @@ export function PatientLoginPage() {
   }
 
   return (
-    <div className="flex min-h-svh flex-col items-center justify-center bg-muted/40 px-5 py-10 sm:px-8">
-      <div className="w-full max-w-sm rounded-3xl border border-border bg-card p-7 shadow-sm">
+    <div
+      className="relative flex min-h-svh flex-col items-center justify-center bg-cover bg-center px-5 py-10 sm:px-8"
+      style={{ backgroundImage: "url('https://images.pexels.com/photos/7579831/pexels-photo-7579831.jpeg?auto=compress&cs=tinysrgb&w=1600')" }}
+    >
+      <div className="absolute inset-0 bg-gradient-to-b from-background/40 via-background/50 to-background/70" />
+      <div className="relative w-full max-w-sm rounded-3xl border border-border bg-card p-7 shadow-sm">
         <BrandMark className="mb-6" />
 
         {step === "phone" ? (

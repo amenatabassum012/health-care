@@ -3,23 +3,37 @@ import { useTranslation } from "react-i18next"
 import { useMutation, useQuery } from "@tanstack/react-query"
 import { CalendarClock, Hospital, MapPin, Video } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 import { getFacilities } from "@/lib/api/shared"
 import { createAppointment } from "@/lib/api/patient"
 import { useSession } from "@/state/session"
 import { facilityLabel } from "@/mocks/facilities"
-import type { AppointmentType } from "@/types"
+import type { AppointmentType, DependentRelation } from "@/types"
 import { cn } from "@/lib/utils"
+
+const RELATIONS: DependentRelation[] = ["Child", "Elder", "Other"]
 
 export function BookingPage() {
   const { t } = useTranslation()
   const { patient } = useSession()
   const [type, setType] = useState<AppointmentType>("InPerson")
   const [facilityId, setFacilityId] = useState<string | null>(null)
+  const [bookedForName, setBookedForName] = useState("")
+  const [bookedForRelation, setBookedForRelation] = useState<DependentRelation>("Child")
 
   const { data: facilities } = useQuery({ queryKey: ["facilities"], queryFn: getFacilities })
 
   const bookMutation = useMutation({
-    mutationFn: () => createAppointment(patient!.id, facilityId!, type),
+    mutationFn: () =>
+      createAppointment(
+        patient!.id,
+        facilityId!,
+        type,
+        patient?.isGuardianManaged && bookedForName
+          ? { name: bookedForName, relation: bookedForRelation }
+          : undefined
+      ),
   })
 
   if (bookMutation.isSuccess) {
@@ -30,6 +44,14 @@ export function BookingPage() {
           <CalendarClock className="size-8" />
         </span>
         <h1 className="text-2xl font-bold text-foreground">{t("patient.booking.booked")}</h1>
+        {appt.bookedForName && (
+          <p className="mt-1 text-sm text-muted-foreground">
+            {t("patient.booking.bookedFor.summary", {
+              name: appt.bookedForName,
+              relation: t(`patient.booking.bookedFor.${appt.bookedForRelation?.toLowerCase()}`),
+            })}
+          </p>
+        )}
         <div className="mt-6 w-full max-w-xs rounded-2xl border border-teal/30 bg-mint/60 p-6">
           <p className="text-xs font-medium uppercase tracking-wide text-teal-dark">
             {t("patient.booking.queuePosition")}
@@ -96,10 +118,40 @@ export function BookingPage() {
         </div>
       </div>
 
+      {patient?.isGuardianManaged && (
+        <div className="space-y-3 rounded-2xl border border-teal/30 bg-mint/40 p-4">
+          <p className="text-sm font-semibold text-foreground">{t("patient.booking.bookedFor.title")}</p>
+          <div className="space-y-1.5">
+            <Label className="text-xs">{t("patient.booking.bookedFor.name")}</Label>
+            <Input
+              value={bookedForName}
+              onChange={(e) => setBookedForName(e.target.value)}
+              placeholder={t("patient.booking.bookedFor.namePlaceholder")}
+              className="h-11 bg-background"
+            />
+          </div>
+          <div className="flex gap-2">
+            {RELATIONS.map((r) => (
+              <button
+                key={r}
+                type="button"
+                onClick={() => setBookedForRelation(r)}
+                className={cn(
+                  "flex-1 rounded-lg border-2 py-2 text-xs font-medium",
+                  bookedForRelation === r ? "border-teal bg-teal text-white" : "border-border bg-background text-foreground"
+                )}
+              >
+                {t(`patient.booking.bookedFor.${r.toLowerCase()}`)}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       <Button
         size="xl"
         className="w-full bg-teal text-white hover:bg-teal-dark"
-        disabled={!facilityId || bookMutation.isPending}
+        disabled={!facilityId || (patient?.isGuardianManaged && !bookedForName) || bookMutation.isPending}
         onClick={() => bookMutation.mutate()}
       >
         {bookMutation.isPending ? t("common.loading") : t("patient.booking.confirm")}

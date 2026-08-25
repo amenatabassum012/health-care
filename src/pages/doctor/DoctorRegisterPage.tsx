@@ -28,6 +28,7 @@ import {
 } from "@/components/ui/select"
 import { getSpecialties, searchFacilities } from "@/lib/api/shared"
 import { registerStaff } from "@/lib/api/doctor"
+import { saveCertificateFile } from "@/lib/certificateStore"
 import { facilityLabel } from "@/mocks/facilities"
 import type { StaffRole } from "@/types"
 import { cn } from "@/lib/utils"
@@ -56,6 +57,8 @@ export function DoctorRegisterPage() {
   const [specialtyId, setSpecialtyId] = useState<string | undefined>(undefined)
   const [nmcNumber, setNmcNumber] = useState("")
   const [fileName, setFileName] = useState<string | null>(null)
+  const [credentialFile, setCredentialFile] = useState<File | null>(null)
+  const [pendingStaffId] = useState(() => `staff-${Date.now()}`)
 
   const { data: facilities } = useQuery({
     queryKey: ["facility-search", facilityQuery],
@@ -64,8 +67,10 @@ export function DoctorRegisterPage() {
   const { data: specialties } = useQuery({ queryKey: ["specialties"], queryFn: getSpecialties })
 
   const submitMutation = useMutation({
-    mutationFn: () =>
-      registerStaff({
+    mutationFn: async () => {
+      if (credentialFile) await saveCertificateFile(pendingStaffId, credentialFile)
+      return registerStaff({
+        id: pendingStaffId,
         name,
         phone,
         email,
@@ -74,7 +79,8 @@ export function DoctorRegisterPage() {
         specialtyId,
         nmcRegistrationNo: nmcNumber,
         credentialFileName: fileName ?? undefined,
-      }),
+      })
+    },
   })
 
   const step = STEPS[stepIndex]
@@ -105,7 +111,7 @@ export function DoctorRegisterPage() {
 
   if (submitMutation.isSuccess) {
     return (
-      <div className="flex min-h-svh flex-col items-center justify-center bg-muted/40 px-5 py-10 text-center">
+      <div className="flex min-h-svh flex-col items-center justify-center bg-muted/40 bg-rhc-pattern-shield px-5 py-10 text-center">
         <span className="mb-4 flex size-16 items-center justify-center rounded-2xl bg-warning/15 text-warning">
           <ShieldCheck className="size-8" />
         </span>
@@ -122,8 +128,12 @@ export function DoctorRegisterPage() {
   const visibleIndex = isSpecialist ? stepIndex : stepIndex > STEPS.indexOf("specialty") ? stepIndex - 1 : stepIndex
 
   return (
-    <div className="flex min-h-svh flex-col items-center bg-muted/40 px-5 py-8">
-      <div className="w-full max-w-lg rounded-3xl border border-border bg-card p-7 shadow-sm">
+    <div
+      className="relative flex min-h-svh flex-col items-center bg-cover bg-center px-5 py-8"
+      style={{ backgroundImage: "url('https://images.pexels.com/photos/5934405/pexels-photo-5934405.jpeg?auto=compress&cs=tinysrgb&w=1600')" }}
+    >
+      <div className="absolute inset-0 bg-gradient-to-b from-background/40 via-background/50 to-background/70" />
+      <div className="relative w-full max-w-lg rounded-3xl border border-border bg-card p-7 shadow-sm">
         <div className="mb-6 flex items-center justify-between">
           <BrandMark compact />
           <Link to="/doctor/login" className="text-xs text-muted-foreground hover:underline">
@@ -253,7 +263,11 @@ export function DoctorRegisterPage() {
                   type="file"
                   className="hidden"
                   accept="image/*,application/pdf"
-                  onChange={(e) => setFileName(e.target.files?.[0]?.name ?? null)}
+                  onChange={(e) => {
+                    const file = e.target.files?.[0] ?? null
+                    setCredentialFile(file)
+                    setFileName(file?.name ?? null)
+                  }}
                 />
               </label>
             </div>
