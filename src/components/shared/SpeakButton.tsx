@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next"
 import { toast } from "sonner"
 import { Volume2, VolumeX } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { isSpeechSupported, speakText, speechLangFor, stopSpeaking } from "@/lib/speech"
+import { isSpeechSupported, onSpeechStopped, speakText, speechLangFor, stopSpeaking } from "@/lib/speech"
 
 /**
  * A listen control for patients who can't read the local script — reads
@@ -15,6 +15,11 @@ import { isSpeechSupported, speakText, speechLangFor, stopSpeaking } from "@/lib
  * so screens narrate themselves instead of waiting for a tap. It's still a
  * real toggle button underneath: tapping it always stops (or restarts)
  * playback, exactly like the manual case.
+ *
+ * Its icon also resets to idle whenever playback is stopped from outside
+ * this button entirely — another Listen tap elsewhere, leaving the page,
+ * backgrounding the app, or closing it — so it never gets stuck showing
+ * "speaking" once the audio has actually gone quiet.
  */
 export function SpeakButton({
   text,
@@ -31,12 +36,14 @@ export function SpeakButton({
   const [speaking, setSpeaking] = useState(false)
 
   function play() {
-    setSpeaking(true)
-    speakText(text, speechLangFor(i18n.language), (voiceFound) => {
-      setSpeaking(false)
-      if (!voiceFound && i18n.language !== "en") {
-        toast.error(t("common.noVoiceForLanguage"))
-      }
+    speakText(text, speechLangFor(i18n.language), {
+      onStart: () => setSpeaking(true),
+      onEnd: (voiceFound) => {
+        setSpeaking(false)
+        if (!voiceFound && i18n.language !== "en") {
+          toast.error(t("common.noVoiceForLanguage"))
+        }
+      },
     })
   }
 
@@ -47,6 +54,8 @@ export function SpeakButton({
     // not on every render — `play`/`t` are recreated each render.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [autoPlay, text])
+
+  useEffect(() => onSpeechStopped(() => setSpeaking(false)), [])
 
   if (!isSpeechSupported()) return null
 

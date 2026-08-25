@@ -25,18 +25,52 @@ export function speechLangFor(i18nLanguage: string) {
 }
 
 /**
- * Bumped on every stopSpeaking() call (including the one at the start of
- * every speakText()) so an in-flight speakText() whose voice lookup is
- * still pending can tell it's been superseded — by a page navigation, a
- * different Listen tap, or a manual stop — and skip actually starting.
- * Without this, a slow voice lookup can still call speechSynthesis.speak()
- * after the page that requested it has already been left.
+ * Bumped on every stopSpeaking() call so an in-flight speakText() whose
+ * voice lookup is still pending can tell it's been superseded — by a page
+ * navigation, a different Listen tap, or a manual stop — and skip actually
+ * starting. Without this, a slow voice lookup can still call
+ * speechSynthesis.speak() after the page that requested it has already
+ * been left.
  */
 let speechToken = 0
 
+const STOP_EVENT = "rhc:speech-stopped"
+
+/**
+ * Stops any playback and tells every mounted Listen button to reset its own
+ * icon back to idle — not just the one that triggered the stop. Needed
+ * because the stop can come from outside any button entirely (navigation,
+ * backgrounding the app, closing it), and because relying on the browser to
+ * fire the cancelled utterance's onend/onerror isn't reliable enough across
+ * browsers to be the only path back to idle.
+ */
 export function stopSpeaking() {
   speechToken++
-  if (isSpeechSupported()) window.speechSynthesis.cancel()
+  if (isSpeechSupported()) {
+    window.speechSynthesis.cancel()
+    window.dispatchEvent(new Event(STOP_EVENT))
+  }
+}
+
+/** Subscribes to stopSpeaking(); returns an unsubscribe function. */
+export function onSpeechStopped(handler: () => void) {
+  if (!isSpeechSupported()) return () => {}
+  window.addEventListener(STOP_EVENT, handler)
+  return () => window.removeEventListener(STOP_EVENT, handler)
+}
+
+/**
+ * speechSynthesis is a page-wide singleton, not tied to any one component's
+ * lifecycle, so it needs to be silenced the moment the patient leaves the
+ * app entirely — backgrounding the browser/tab, switching apps on the
+ * phone, or closing it outright — not just on in-app navigation. Registered
+ * once at module load.
+ */
+if (isSpeechSupported()) {
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "hidden") stopSpeaking()
+  })
+  window.addEventListener("pagehide", stopSpeaking)
 }
 
 let cachedVoicesPromise: Promise<SpeechSynthesisVoice[]> | null = null
@@ -78,14 +112,22 @@ function findVoice(voices: SpeechSynthesisVoice[], lang: string) {
 }
 
 /**
- * Speaks `text` in `lang`. `onEnd` receives whether a real matching voice
- * was found and used — the caller can warn the user when it wasn't, rather
- * than let a wrong-language voice mangle the text silently.
+ * Speaks `text` in `lang`. Stops whatever was playing first (broadcasting
+ * the stop so other buttons reset), then starts — `onStart` fires right
+ * before playback actually begins, after that broadcast, so the caller can
+ * safely mark itself as the one now speaking without the broadcast
+ * immediately undoing it. `onEnd` receives whether a real matching voice
+ * was found and used, so the caller can warn the user when it wasn't
+ * rather than let a wrong-language voice mangle the text silently.
  */
-export async function speakText(text: string, lang: string, onEnd?: (voiceFound: boolean) => void) {
+export async function speakText(
+  text: string,
+  lang: string,
+  callbacks?: { onStart?: () => void; onEnd?: (voiceFound: boolean) => void }
+) {
   if (!isSpeechSupported() || !text.trim()) return
-  const token = ++speechToken
-  window.speechSynthesis.cancel()
+  stopSpeaking()
+  const token = speechToken
 
   const voices = await loadVoices()
   if (token !== speechToken) return // superseded while voices were loading — don't start late
@@ -95,7 +137,8 @@ export async function speakText(text: string, lang: string, onEnd?: (voiceFound:
   utterance.lang = lang
   if (voice) utterance.voice = voice
   utterance.rate = 0.9
-  utterance.onend = () => onEnd?.(!!voice)
-  utterance.onerror = () => onEnd?.(!!voice)
+  utterance.onend = () => callbacks?.onEnd?.(!!voice)
+  utterance.onerror = () => callbacks?.onEnd?.(!!voice)
+  callbacks?.onStart?.()
   window.speechSynthesis.speak(utterance)
 }

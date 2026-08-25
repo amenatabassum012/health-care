@@ -44,7 +44,7 @@ export function SosPage() {
 
       {confirmed && mutation.data && (
         <div className="mt-8 w-full max-w-sm space-y-4">
-          <div className="rounded-2xl border border-success/30 bg-success/10 p-5">
+          <div className="rounded-2xl border border-success/40 bg-success/25 p-5 backdrop-blur-sm">
             <p className="flex items-center justify-center gap-2 font-semibold text-success">
               <PhoneCall className="size-4" />
               {t("patient.sos.routedTo")} {mutation.data.routedFacilityName}
