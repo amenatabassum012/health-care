@@ -10,7 +10,7 @@ doc = new_doc()
 add_title_page(
     doc,
     kicker="Technical Architecture Specification",
-    title="Rural Health Connect",
+    title="SwasthyaSetu AI",
     subtitle="System design, service boundaries, data model & offline-first strategy",
     meta_lines=[
         "Version 1.0  •  Draft for Development Handoff",

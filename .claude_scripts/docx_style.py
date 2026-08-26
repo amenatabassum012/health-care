@@ -278,7 +278,7 @@ def body(doc, text, bold=False, italic=False, color=None, size=10.5, align=None)
     return p
 
 
-def add_footer_page_numbers(doc, brand_text="Rural Health Connect — Confidential Draft"):
+def add_footer_page_numbers(doc, brand_text="SwasthyaSetu AI — Confidential Draft"):
     section = doc.sections[0]
     footer = section.footer
     p = footer.paragraphs[0]

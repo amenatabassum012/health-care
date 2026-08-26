@@ -1,6 +1,6 @@
-# Rural Health Connect — AI Coding Rules
+# SwasthyaSetu AI — AI Coding Rules
 
-You are building **Rural Health Connect (RHC)**, an integrated care-access and quality platform for
+You are building **SwasthyaSetu AI (RHC)**, an integrated care-access and quality platform for
 rural and underserved public healthcare in India. Full context lives in `docs/`:
 `01_PRD_Product_Requirements_Document.docx`, `02_Architecture_Specification.docx`,
 `03_Design_Specification.docx`, `04_Phased_Implementation_Roadmap.docx`. Follow those documents as the

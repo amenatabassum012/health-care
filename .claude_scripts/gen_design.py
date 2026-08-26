@@ -10,7 +10,7 @@ doc = new_doc()
 add_title_page(
     doc,
     kicker="Design & UX Specification",
-    title="Rural Health Connect",
+    title="SwasthyaSetu AI",
     subtitle="Visual identity, screen-by-screen UX, and component system",
     meta_lines=[
         "Version 1.0  •  Draft for Development Handoff",

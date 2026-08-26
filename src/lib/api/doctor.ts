@@ -3,6 +3,7 @@ import { MOCK_APPOINTMENT, MOCK_APPOINTMENTS, MOCK_PATIENT_DIRECTORY, MOCK_REFER
 import { MOCK_STAFF } from "@/mocks/staff"
 import type { Appointment, Qualification, Referral, ReferralUrgency, StaffRole, StaffUser } from "@/types"
 import { networkDelay } from "./delay"
+import { supabase } from "@/lib/supabaseClient"
 
 export interface StaffRegistrationInput {
   id?: string
@@ -17,50 +18,121 @@ export interface StaffRegistrationInput {
 }
 
 export async function registerStaff(input: StaffRegistrationInput): Promise<StaffUser> {
-  await networkDelay(900)
   const { id, ...rest } = input
-  const staff: StaffUser = {
-    id: id ?? `staff-${Date.now()}`,
-    verificationStatus: "Pending",
-    ...rest,
-  }
-  MOCK_STAFF.push(staff)
-  return staff
+
+  const { data, error } = await supabase
+    .from('staff')
+    .insert({
+      name: rest.name,
+      phone: rest.phone,
+      email: rest.email,
+      role: rest.role,
+      facility_id: rest.facilityId,
+      specialty_id: rest.specialtyId ?? null,
+      nmc_registration_no: rest.nmcRegistrationNo,
+      credential_file_name: rest.credentialFileName ?? null,
+      verification_status: 'Pending',
+    })
+    .select()
+    .single()
+
+  if (error) throw error
+
+  return {
+    id: data.id,
+    name: data.name,
+    phone: data.phone,
+    email: data.email,
+    role: data.role,
+    facilityId: data.facility_id,
+    specialtyId: data.specialty_id,
+    nmcRegistrationNo: data.nmc_registration_no,
+    credentialFileName: data.credential_file_name,
+    verificationStatus: data.verification_status,
+  } as StaffUser
 }
 
 export async function loginStaff(staffIdOrPhone: string): Promise<StaffUser> {
-  await networkDelay(600)
-  const staff = MOCK_STAFF.find(
-    (s) => s.phone === staffIdOrPhone || s.id === staffIdOrPhone
-  )
-  if (!staff) {
-    // Demo fallback: first verified doctor, so the flow is explorable without
-    // needing to remember a seeded phone number.
-    return MOCK_STAFF.find((s) => s.verificationStatus === "Verified" && s.role !== "FacilityAdmin")!
-  }
-  return staff
+  const { data, error } = await supabase
+    .from('staff')
+    .select('*')
+    .or(`phone.eq.${staffIdOrPhone},id.eq.${staffIdOrPhone}`)
+    .maybeSingle()
+
+  if (error) throw error
+  if (!data) throw new Error('Staff not found. Please register first.')
+
+  return {
+    id: data.id,
+    name: data.name,
+    phone: data.phone,
+    email: data.email,
+    role: data.role,
+    facilityId: data.facility_id,
+    specialtyId: data.specialty_id,
+    nmcRegistrationNo: data.nmc_registration_no,
+    credentialFileName: data.credential_file_name,
+    verificationStatus: data.verification_status,
+  } as StaffUser
 }
 
 export async function getPendingStaff(facilityId: string): Promise<StaffUser[]> {
-  await networkDelay(400)
-  return MOCK_STAFF.filter((s) => s.facilityId === facilityId && s.verificationStatus === "Pending")
+  const { data, error } = await supabase
+    .from('staff')
+    .select('*')
+    .eq('facility_id', facilityId)
+    .eq('verification_status', 'Pending')
+
+  if (error) throw error
+
+  return (data ?? []).map((s) => ({
+    id: s.id,
+    name: s.name,
+    phone: s.phone,
+    email: s.email,
+    role: s.role,
+    facilityId: s.facility_id,
+    specialtyId: s.specialty_id,
+    nmcRegistrationNo: s.nmc_registration_no,
+    credentialFileName: s.credential_file_name,
+    verificationStatus: s.verification_status,
+  })) as StaffUser[]
 }
 
 export async function approveStaff(staffId: string) {
-  await networkDelay(500)
-  const staff = MOCK_STAFF.find((s) => s.id === staffId)
-  if (staff) staff.verificationStatus = "Verified"
-  return staff
+  const { data, error } = await supabase
+    .from('staff')
+    .update({ verification_status: 'Verified' })
+    .eq('id', staffId)
+    .select()
+    .single()
+
+  if (error) throw error
+
+  return {
+    id: data.id,
+    name: data.name,
+    phone: data.phone,
+    email: data.email,
+    role: data.role,
+    facilityId: data.facility_id,
+    specialtyId: data.specialty_id,
+    nmcRegistrationNo: data.nmc_registration_no,
+    credentialFileName: data.credential_file_name,
+    verificationStatus: data.verification_status,
+  } as StaffUser
 }
 
 export async function rejectStaff(staffId: string, reason: string) {
-  await networkDelay(500)
-  const staff = MOCK_STAFF.find((s) => s.id === staffId)
-  if (staff) {
-    staff.verificationStatus = "Rejected"
-    staff.rejectionReason = reason
-  }
-  return staff
+  const { data, error } = await supabase
+    .from('staff')
+    .update({ verification_status: 'Rejected' })
+    .eq('id', staffId)
+    .select()
+    .single()
+
+  if (error) throw error
+  return data
 }
 
 export async function getDoctorQueue(_facilityId: string) {

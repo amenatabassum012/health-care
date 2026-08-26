@@ -11,7 +11,7 @@ doc = new_doc()
 add_title_page(
     doc,
     kicker="Product Requirements Document",
-    title="Rural Health Connect",
+    title="SwasthyaSetu AI",
     subtitle="An integrated care-access and quality platform for rural & underserved public healthcare",
     meta_lines=[
         "Version 1.0  •  Draft for Development Handoff",
@@ -28,7 +28,7 @@ body(doc, "Rural and underserved communities in India face long travel distances
           "services already available to them. Patients move between sub-centres, Primary Health Centres (PHCs), "
           "rural hospitals and district hospitals without any continuity of information. Connectivity, language, "
           "health literacy and affordability compound the problem.")
-body(doc, "Rural Health Connect (RHC) is an integrated care-access and quality-support platform that combines "
+body(doc, "SwasthyaSetu AI (RHC) is an integrated care-access and quality-support platform that combines "
           "assisted teleconsultation, digital triage, appointment and queue management, longitudinal patient "
           "records, referral tracking, diagnostic and medicine-availability coordination, high-risk follow-up, "
           "and facility-level quality dashboards — all designed offline-first, multilingual, and voice-assisted "

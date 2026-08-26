@@ -10,7 +10,7 @@ doc = new_doc()
 add_title_page(
     doc,
     kicker="Engineering Standards Reference",
-    title="Rural Health Connect",
+    title="SwasthyaSetu AI",
     subtitle="AI-coding-tool rules (.cursorrules) — documented for the wider dev handoff",
     meta_lines=[
         "Version 1.0  •  Mirrors the functional .cursorrules file at the project root",

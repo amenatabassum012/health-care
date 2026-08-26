@@ -10,7 +10,7 @@ doc = new_doc()
 add_title_page(
     doc,
     kicker="Phased Implementation Roadmap",
-    title="Rural Health Connect",
+    title="SwasthyaSetu AI",
     subtitle="From MVP to a state-wide, offline-first care-access platform",
     meta_lines=[
         "Version 1.0  •  Draft for Development Handoff",

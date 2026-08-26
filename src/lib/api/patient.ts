@@ -11,14 +11,38 @@ import {
 import { computeTriageResult, type TriageOption } from "@/mocks/triage"
 import type { Appointment, DoctorFeedback, Patient, StockItem, TriageAnswer, TriageSession } from "@/types"
 import { networkDelay } from "./delay"
-
+import { supabase } from "@/lib/supabaseClient"
 export async function requestOtp(phone: string) {
-  await networkDelay(600)
-  return { phone, requestId: `otp-${Date.now()}` }
+  const code = Math.floor(100000 + Math.random() * 900000).toString()
+  const expiresAt = new Date(Date.now() + 5 * 60 * 1000).toISOString()
+
+  const { error } = await supabase
+    .from('otp_codes')
+    .insert({ phone, code, expires_at: expiresAt })
+
+  if (error) throw error
+
+  console.log(`OTP for ${phone}: ${code}`)
+
+  return { phone, requestId: `otp-${Date.now()}`, demoCode: code }
 }
 
-export async function verifyOtp(phone: string, _code: string): Promise<Patient> {
-  await networkDelay(600)
+export async function verifyOtp(phone: string, code: string): Promise<Patient> {
+  const { data, error } = await supabase
+    .from('otp_codes')
+    .select('*')
+    .eq('phone', phone)
+    .eq('code', code)
+    .eq('verified', false)
+    .gte('expires_at', new Date().toISOString())
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .single()
+
+  if (error || !data) throw new Error('Invalid or expired OTP')
+
+  await supabase.from('otp_codes').update({ verified: true }).eq('id', data.id)
+
   return { ...MOCK_PATIENT, phone }
 }
 

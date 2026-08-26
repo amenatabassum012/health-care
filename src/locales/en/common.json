@@ -1,6 +1,6 @@
 {
   "app": {
-    "name": "Rural Health Connect"
+    "name": "SwasthyaSetu AI"
   },
   "common": {
     "back": "Back",
@@ -22,7 +22,7 @@
   },
   "role": {
     "chooseRole": "Who are you?",
-    "chooseRoleSubtitle": "Choose how you'd like to use Rural Health Connect",
+    "chooseRoleSubtitle": "Choose how you'd like to use SwasthyaSetu AI",
     "patientGuardian": "Patient / Guardian",
     "patientGuardianDesc": "Book visits, consult a doctor, and track your health records",
     "doctorHealthWorker": "Doctor / Health Worker",
