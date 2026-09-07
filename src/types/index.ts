@@ -7,6 +7,8 @@ export interface Facility {
   district: string
   state: string
   distanceKm?: number
+  latitude?: number
+  longitude?: number
 }
 
 export type StaffRole = "Doctor" | "Specialist" | "CHO" | "FacilityAdmin"
@@ -102,6 +104,7 @@ export interface Appointment {
   status: AppointmentStatus
   bookedForName?: string
   bookedForRelation?: DependentRelation
+  cancellationReason?: string
 }
 
 export type ConsultationMode = "Video" | "Audio" | "Callback"
@@ -192,4 +195,29 @@ export interface FacilityQualityMetrics {
   referralCompletionRate: number
   stockAvailabilityRate: number
   avgWaitMinutes: number
+}
+
+/**
+ * A privately-run medical/pharmacy shop, distinct from a government Facility.
+ * Managed by facility admin staff (no separate shop-owner login) — see
+ * ShopInventoryPage under the doctor/admin routes.
+ */
+export interface MedicalShop {
+  id: string
+  name: string
+  address: string
+  district: string
+  state: string
+  phone?: string
+  latitude: number
+  longitude: number
+}
+
+export interface ShopStockItem {
+  id: string
+  shopId: string
+  name: string
+  category: "Medicine" | "Diagnostic"
+  status: "Available" | "LowStock" | "Unavailable"
+  updatedAt: string
 }

@@ -5,6 +5,19 @@ import type { Appointment, Qualification, Referral, ReferralUrgency, StaffRole, 
 import { networkDelay } from "./delay"
 import { supabase } from "@/lib/supabaseClient"
 
+// DEMO/TEST STAFF LOGIN — for SIH demo & dev only, do NOT ship to production.
+// Real staff login requires registering through the multi-step form and
+// waiting for a facility admin to verify the account, which is awkward to
+// demo live. Entering this fixed facility code bypasses Supabase entirely
+// and logs straight in as one of the seeded mock staff accounts below.
+// Facility code -> 000000
+// Staff ID / mobile -> one of:
+//   staff-001 / 9876500011  -> Dr. Anjali Mehra (Verified, Specialist)
+//   staff-002 / 9876500022  -> Dr. Rohit Sharma (Verified, Doctor)
+//   staff-005 / 9876500055  -> Meena Rawat (Verified, FacilityAdmin)
+//   staff-003 / 9876500033  -> Priya Nautiyal (Pending — to demo the verification block)
+const TEST_FACILITY_CODE = "000000"
+
 export interface StaffRegistrationInput {
   id?: string
   name: string
@@ -23,6 +36,7 @@ export async function registerStaff(input: StaffRegistrationInput): Promise<Staf
   const { data, error } = await supabase
     .from('staff')
     .insert({
+      ...(id ? { id } : {}),
       name: rest.name,
       phone: rest.phone,
       email: rest.email,
@@ -52,7 +66,13 @@ export async function registerStaff(input: StaffRegistrationInput): Promise<Staf
   } as StaffUser
 }
 
-export async function loginStaff(staffIdOrPhone: string): Promise<StaffUser> {
+export async function loginStaff(staffIdOrPhone: string, facilityCode?: string): Promise<StaffUser> {
+  if (facilityCode === TEST_FACILITY_CODE) {
+    const testStaff = MOCK_STAFF.find((s) => s.id === staffIdOrPhone || s.phone === staffIdOrPhone)
+    if (!testStaff) throw new Error("Staff not found. Please register first.")
+    return testStaff
+  }
+
   const { data, error } = await supabase
     .from('staff')
     .select('*')

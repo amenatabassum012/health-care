@@ -7,6 +7,7 @@ import {
   LayoutDashboard,
   LogOut,
   ShieldCheck,
+  Store,
   Users,
 } from "lucide-react"
 import { BrandMark } from "@/components/shared/BrandMark"
@@ -31,6 +32,7 @@ export function DoctorLayout() {
       ? [
           { to: "/doctor/verification", icon: ShieldCheck, label: t("doctor.admin.verificationQueue") },
           { to: "/doctor/facility", icon: Gauge, label: t("doctor.admin.facilityDashboard") },
+          { to: "/doctor/shops", icon: Store, label: t("doctor.shop.title") },
         ]
       : [
           { to: "/doctor/patients", icon: Users, label: t("doctor.patients.title") },

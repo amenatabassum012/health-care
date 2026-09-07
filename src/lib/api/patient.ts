@@ -12,7 +12,27 @@ import { computeTriageResult, type TriageOption } from "@/mocks/triage"
 import type { Appointment, DoctorFeedback, Patient, StockItem, TriageAnswer, TriageSession } from "@/types"
 import { networkDelay } from "./delay"
 import { supabase } from "@/lib/supabaseClient"
+
+// DEMO/TEST OTP NUMBERS — for SIH demo & dev only, do NOT ship to production.
+// Real SMS delivery requires a paid Supabase SMS provider, so these numbers
+// bypass the DB-backed OTP flow entirely and accept a fixed code instead.
+// Test numbers -> fixed OTP:
+//   +919999999999 -> 123456
+//   +919888888888 -> 123456
+//   +919777777777 -> 123456
+const TEST_OTP_NUMBERS: Record<string, string> = {
+  "+919999999999": "123456",
+  "+919888888888": "123456",
+  "+919777777777": "123456",
+}
+
 export async function requestOtp(phone: string) {
+  const testCode = TEST_OTP_NUMBERS[phone]
+  if (testCode) {
+    console.log(`[TEST OTP] Using fixed demo code for ${phone}: ${testCode}`)
+    return { phone, requestId: `otp-test-${Date.now()}`, demoCode: testCode }
+  }
+
   const code = Math.floor(100000 + Math.random() * 900000).toString()
   const expiresAt = new Date(Date.now() + 5 * 60 * 1000).toISOString()
 
@@ -28,6 +48,12 @@ export async function requestOtp(phone: string) {
 }
 
 export async function verifyOtp(phone: string, code: string): Promise<Patient> {
+  const testCode = TEST_OTP_NUMBERS[phone]
+  if (testCode) {
+    if (code !== testCode) throw new Error('Invalid or expired OTP')
+    return { ...MOCK_PATIENT, phone }
+  }
+
   const { data, error } = await supabase
     .from('otp_codes')
     .select('*')
@@ -110,6 +136,16 @@ export async function getAppointments(patientId: string) {
 
 export async function getCachedAppointments(patientId: string) {
   return db.appointments.where("patientId").equals(patientId).sortBy("slotTime")
+}
+
+export async function cancelAppointment(appointmentId: string, reason: string): Promise<Appointment> {
+  await networkDelay(400)
+  const appointment = await db.appointments.get(appointmentId)
+  if (!appointment) throw new Error("Appointment not found")
+
+  const updated: Appointment = { ...appointment, status: "Cancelled", cancellationReason: reason }
+  await db.appointments.put(updated)
+  return updated
 }
 
 export async function submitFeedback(

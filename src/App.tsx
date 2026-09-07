@@ -30,6 +30,7 @@ const ProfilePage = lazy(() => import("@/pages/doctor/ProfilePage").then((m) => 
 const ConsultationPage = lazy(() => import("@/pages/doctor/ConsultationPage").then((m) => ({ default: m.ConsultationPage })))
 const AdminVerificationPage = lazy(() => import("@/pages/doctor/AdminVerificationPage").then((m) => ({ default: m.AdminVerificationPage })))
 const FacilityDashboardPage = lazy(() => import("@/pages/doctor/FacilityDashboardPage").then((m) => ({ default: m.FacilityDashboardPage })))
+const ShopInventoryPage = lazy(() => import("@/pages/doctor/ShopInventoryPage").then((m) => ({ default: m.ShopInventoryPage })))
 
 function RouteLoadingFallback() {
   return (
@@ -90,6 +91,7 @@ export function App() {
               <Route element={<RequireFacilityAdmin />}>
                 <Route path="/doctor/verification" element={<AdminVerificationPage />} />
                 <Route path="/doctor/facility" element={<FacilityDashboardPage />} />
+                <Route path="/doctor/shops" element={<ShopInventoryPage />} />
               </Route>
             </Route>
           </Route>

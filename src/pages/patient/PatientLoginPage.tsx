@@ -64,6 +64,8 @@ export function PatientLoginPage() {
                 onChange={(e) => setPhone(e.target.value)}
                 className="h-12 text-base"
               />
+              {/* Demo/test OTP hint — see TEST_OTP_NUMBERS in src/lib/api/patient.ts */}
+              <p className="text-xs text-muted-foreground">{t("patient.login.demoHint")}</p>
             </div>
 
             <button

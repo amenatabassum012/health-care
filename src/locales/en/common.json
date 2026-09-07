@@ -39,6 +39,7 @@
       "subtitle": "Log in with your mobile number — no email needed",
       "phoneLabel": "Mobile number",
       "phonePlaceholder": "10-digit mobile number",
+      "demoHint": "Demo: try +919999999999 (OTP: 123456)",
       "sendOtp": "Send OTP",
       "otpLabel": "Enter the 6-digit code",
       "otpSentTo": "Code sent to",
@@ -183,6 +184,19 @@
       "commentPlaceholder": "Anything you'd like to share? (optional)",
       "submitRating": "Submit rating",
       "yourRating": "Your rating",
+      "cancel": "Cancel appointment",
+      "cancelTitle": "Cancel this appointment?",
+      "cancelDescription": "Please tell us why you're cancelling. This helps the facility manage its queue.",
+      "cancelReasonPlaceholder": "Please type your reason",
+      "confirmCancel": "Confirm cancellation",
+      "cancelledReason": "Reason: {{reason}}",
+      "cancelReasons": {
+        "scheduleConflict": "I have a scheduling conflict",
+        "feelingBetter": "I'm feeling better now",
+        "foundAnotherDoctor": "I found another doctor/facility",
+        "bookedByMistake": "I booked this by mistake",
+        "other": "Other (please specify)"
+      },
       "status": {
         "Booked": "Booked",
         "InQueue": "In queue",
@@ -224,7 +238,23 @@
       "searchPlaceholder": "Search medicine or test",
       "availableAt": "Available at your facility",
       "nearestAlternative": "Nearest facility with availability",
-      "empty": "No matches found here"
+      "empty": "No matches found here",
+      "locating": "Finding your location...",
+      "usingMyLocation": "Showing results near your current location",
+      "usingChosenLocation": "Showing results near your chosen location",
+      "locationUnavailable": "Location not available — showing default results",
+      "chooseLocation": "Choose location",
+      "retryLocation": "Try location again",
+      "nearbyShops": "Nearby medical shops",
+      "noShopsNearby": "No medical shops found nearby",
+      "locationPromptTitle": "See medicine near you",
+      "locationPromptBody": "Turn on your location to find the nearest facility and medical shops with stock.",
+      "turnOnLocation": "Turn on location",
+      "enterManually": "Enter location manually",
+      "locationOffTitle": "Location access is off",
+      "locationOffBody": "We can't find facilities and shops near you. Turn on location access, or enter your location manually below.",
+      "manualLocationPlaceholder": "Type your village or town",
+      "noLocationMatch": "No matching location — try a different spelling"
     },
     "sos": {
       "title": "Emergency SOS",
@@ -247,9 +277,10 @@
       "noAccount": "New staff member?",
       "register": "Register here",
       "pendingBlock": "Your account is still Pending Verification. You cannot log in until a facility admin approves it.",
-      "demoHint": "Demo: try any number, or leave blank and log in to see the verified-doctor dashboard.",
+      "demoHint": "Demo: facility code 000000 with staff ID 9876500011 (Verified Specialist), 9876500022 (Verified Doctor), or 9876500033 (Pending, to see the verification block).",
+      "loginError": "Couldn't log in — check the staff ID and facility code.",
       "staffIdPlaceholder": "9876500011",
-      "facilityCodePlaceholder": "FAC-PHC-001"
+      "facilityCodePlaceholder": "000000"
     },
     "register": {
       "title": "Staff registration",
@@ -278,6 +309,7 @@
       "credentialUpload": "Upload certificate or ID photo",
       "credentialUploadHint": "A clear photo of your registration certificate or ID card",
       "submitRegistration": "Submit for verification",
+      "submitError": "Something went wrong submitting your registration. Please try again.",
       "pendingTitle": "Registration submitted",
       "pendingBody": "Your account is in Pending Verification. A facility admin will review your details before you can take consultations.",
       "backToLogin": "Back to login"
@@ -372,6 +404,18 @@
       "nothingPending": "Nothing pending review",
       "nmcRegistration": "NMC/SMC: {{number}}",
       "defaultCredentialFileName": "credential_scan.jpg"
+    },
+    "shop": {
+      "title": "Medical shop inventory",
+      "selectShop": "Select shop",
+      "addItem": "Add item",
+      "itemName": "Medicine or test name",
+      "categoryMedicine": "Medicine",
+      "categoryDiagnostic": "Diagnostic",
+      "currentStock": "Current stock",
+      "noItems": "No items added yet",
+      "removeItem": "Remove item",
+      "saved": "Saved"
     }
   },
   "status": {

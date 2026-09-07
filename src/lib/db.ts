@@ -1,5 +1,5 @@
 import Dexie, { type EntityTable } from "dexie"
-import type { Appointment, DoctorFeedback, HealthRecordEntry, Referral, StoredCertificate, TriageSession } from "@/types"
+import type { Appointment, DoctorFeedback, HealthRecordEntry, Referral, ShopStockItem, StoredCertificate, TriageSession } from "@/types"
 
 /**
  * Local-first cache per Architecture Specification §6 (Offline-First & Sync Strategy).
@@ -13,6 +13,7 @@ class RuralHealthConnectDB extends Dexie {
   referrals!: EntityTable<Referral, "id">
   certificateFiles!: EntityTable<StoredCertificate, "id">
   feedback!: EntityTable<DoctorFeedback, "id">
+  shopStock!: EntityTable<ShopStockItem, "id">
 
   constructor() {
     super("rhc-offline-cache")
@@ -30,6 +31,15 @@ class RuralHealthConnectDB extends Dexie {
       referrals: "id, patientId, status",
       certificateFiles: "id",
       feedback: "id, doctorId, appointmentId, patientId",
+    })
+    this.version(3).stores({
+      triageSessions: "id, patientId, createdAt",
+      healthRecords: "id, patientId, date",
+      appointments: "id, patientId, status",
+      referrals: "id, patientId, status",
+      certificateFiles: "id",
+      feedback: "id, doctorId, appointmentId, patientId",
+      shopStock: "id, shopId",
     })
   }
 }

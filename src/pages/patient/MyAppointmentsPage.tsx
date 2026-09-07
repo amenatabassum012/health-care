@@ -2,17 +2,36 @@ import { useState } from "react"
 import { useTranslation } from "react-i18next"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { Link } from "react-router-dom"
-import { CalendarClock, MapPin, ShieldCheck, Star, Users, Video } from "lucide-react"
+import { CalendarClock, MapPin, ShieldCheck, Star, Users, Video, XCircle } from "lucide-react"
 import { EmptyState } from "@/components/shared/EmptyState"
 import { AllCaughtUp } from "@/components/illustrations/AllCaughtUp"
 import { StatusBadge, type StatusTone } from "@/components/shared/StatusBadge"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
-import { getAppointments, getFeedbackForAppointment, submitFeedback } from "@/lib/api/patient"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog"
+import { cancelAppointment, getAppointments, getFeedbackForAppointment, submitFeedback } from "@/lib/api/patient"
 import { getFacilities, getStaff } from "@/lib/api/shared"
 import { useSession } from "@/state/session"
 import type { Appointment, AppointmentStatus, Facility, StaffUser } from "@/types"
 import { cn } from "@/lib/utils"
+
+const CANCELLABLE_STATUSES: AppointmentStatus[] = ["Booked", "InQueue", "InProgress"]
+
+const PRESET_CANCEL_REASONS = [
+  "scheduleConflict",
+  "feelingBetter",
+  "foundAnotherDoctor",
+  "bookedByMistake",
+] as const
+const OTHER_REASON = "other"
 
 const STATUS_TONE: Record<AppointmentStatus, StatusTone> = {
   Booked: "info",
@@ -105,6 +124,103 @@ function AppointmentFeedback({ appointment }: { appointment: Appointment }) {
   )
 }
 
+function CancelAppointmentDialog({
+  appointment,
+  t,
+}: {
+  appointment: Appointment
+  t: (key: string, opts?: Record<string, unknown>) => string
+}) {
+  const queryClient = useQueryClient()
+  const [open, setOpen] = useState(false)
+  const [selectedReason, setSelectedReason] = useState<string | null>(null)
+  const [customReason, setCustomReason] = useState("")
+
+  const finalReason =
+    selectedReason === OTHER_REASON
+      ? customReason.trim()
+      : selectedReason
+        ? t(`patient.appointments.cancelReasons.${selectedReason}`)
+        : ""
+
+  const cancelMutation = useMutation({
+    mutationFn: () => cancelAppointment(appointment.id, finalReason),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["appointments", appointment.patientId] })
+      setOpen(false)
+      setSelectedReason(null)
+      setCustomReason("")
+    },
+  })
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger
+        render={
+          <Button
+            variant="ghost"
+            size="sm"
+            className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+          />
+        }
+      >
+        <XCircle className="size-4" />
+        {t("patient.appointments.cancel")}
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>{t("patient.appointments.cancelTitle")}</DialogTitle>
+          <DialogDescription>{t("patient.appointments.cancelDescription")}</DialogDescription>
+        </DialogHeader>
+        <div className="space-y-1.5">
+          {PRESET_CANCEL_REASONS.map((key) => (
+            <button
+              key={key}
+              type="button"
+              onClick={() => setSelectedReason(key)}
+              className={cn(
+                "w-full rounded-lg border-2 px-3 py-2 text-left text-sm",
+                selectedReason === key ? "border-teal bg-mint" : "border-border bg-background"
+              )}
+            >
+              {t(`patient.appointments.cancelReasons.${key}`)}
+            </button>
+          ))}
+          <button
+            type="button"
+            onClick={() => setSelectedReason(OTHER_REASON)}
+            className={cn(
+              "w-full rounded-lg border-2 px-3 py-2 text-left text-sm",
+              selectedReason === OTHER_REASON ? "border-teal bg-mint" : "border-border bg-background"
+            )}
+          >
+            {t("patient.appointments.cancelReasons.other")}
+          </button>
+          {selectedReason === OTHER_REASON && (
+            <Textarea
+              autoFocus
+              value={customReason}
+              onChange={(e) => setCustomReason(e.target.value)}
+              placeholder={t("patient.appointments.cancelReasonPlaceholder")}
+              rows={3}
+              className="bg-background text-sm"
+            />
+          )}
+        </div>
+        <DialogFooter>
+          <Button
+            variant="destructive"
+            disabled={!finalReason.trim() || cancelMutation.isPending}
+            onClick={() => cancelMutation.mutate()}
+          >
+            {cancelMutation.isPending ? t("common.loading") : t("patient.appointments.confirmCancel")}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
 function AppointmentCard({
   appointment,
   facility,
@@ -189,8 +305,20 @@ function AppointmentCard({
         </p>
       )}
 
+      {appointment.status === "Cancelled" && appointment.cancellationReason && (
+        <p className="mt-2 text-sm text-muted-foreground">
+          {t("patient.appointments.cancelledReason", { reason: appointment.cancellationReason })}
+        </p>
+      )}
+
       {appointment.status === "Completed" && appointment.doctorId && (
         <AppointmentFeedback appointment={appointment} />
+      )}
+
+      {CANCELLABLE_STATUSES.includes(appointment.status) && (
+        <div className="mt-3 border-t border-border pt-3">
+          <CancelAppointmentDialog appointment={appointment} t={t} />
+        </div>
       )}
     </div>
   )

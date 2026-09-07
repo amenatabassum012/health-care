@@ -2,6 +2,7 @@ import { useState } from "react"
 import { Link, useNavigate } from "react-router-dom"
 import { useTranslation } from "react-i18next"
 import { useMutation, useQuery } from "@tanstack/react-query"
+import { toast } from "sonner"
 import {
   Building2,
   Check,
@@ -58,7 +59,6 @@ export function DoctorRegisterPage() {
   const [nmcNumber, setNmcNumber] = useState("")
   const [fileName, setFileName] = useState<string | null>(null)
   const [credentialFile, setCredentialFile] = useState<File | null>(null)
-  const [pendingStaffId] = useState(() => `staff-${Date.now()}`)
 
   const { data: facilities } = useQuery({
     queryKey: ["facility-search", facilityQuery],
@@ -68,9 +68,7 @@ export function DoctorRegisterPage() {
 
   const submitMutation = useMutation({
     mutationFn: async () => {
-      if (credentialFile) await saveCertificateFile(pendingStaffId, credentialFile)
-      return registerStaff({
-        id: pendingStaffId,
+      const staff = await registerStaff({
         name,
         phone,
         email,
@@ -80,6 +78,17 @@ export function DoctorRegisterPage() {
         nmcRegistrationNo: nmcNumber,
         credentialFileName: fileName ?? undefined,
       })
+      if (credentialFile) await saveCertificateFile(staff.id, credentialFile)
+      return staff
+    },
+    onError: (error: unknown) => {
+      const message =
+        error instanceof Error
+          ? error.message
+          : error && typeof error === "object" && "message" in error
+            ? String((error as { message: unknown }).message)
+            : t("doctor.register.submitError")
+      toast.error(message)
     },
   })
 

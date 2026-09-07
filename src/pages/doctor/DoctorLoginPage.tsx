@@ -22,18 +22,22 @@ export function DoctorLoginPage() {
 
   async function handleLogin() {
     setBusy(true)
-    const staff = await loginStaff(staffId)
-    setBusy(false)
-
-    if (staff.verificationStatus !== "Verified") {
-      setPendingBlock(true)
+    try {
+      const staff = await loginStaff(staffId, facilityCode)
+      if (staff.verificationStatus !== "Verified") {
+        setPendingBlock(true)
+        setStaff(staff)
+        return
+      }
       setStaff(staff)
-      return
+      toast.success(`${t("doctor.dashboard.scopedTo")} ${staff.name}`)
+      if (staff.role === "FacilityAdmin") navigate("/doctor/verification")
+      else navigate("/doctor/dashboard")
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : t("doctor.login.loginError"))
+    } finally {
+      setBusy(false)
     }
-    setStaff(staff)
-    toast.success(`${t("doctor.dashboard.scopedTo")} ${staff.name}`)
-    if (staff.role === "FacilityAdmin") navigate("/doctor/verification")
-    else navigate("/doctor/dashboard")
   }
 
   return (
@@ -80,6 +84,9 @@ export function DoctorLoginPage() {
           </div>
         </div>
 
+        {/* Demo/test staff login — see TEST_FACILITY_CODE in src/lib/api/doctor.ts */}
+        <p className="mt-3 text-xs text-muted-foreground">{t("doctor.login.demoHint")}</p>
+
         <Button
           size="xl"
           className="mt-6 w-full bg-brand-blue text-white hover:bg-brand-blue/90"
@@ -94,9 +101,6 @@ export function DoctorLoginPage() {
           <Link to="/doctor/register" className="font-semibold text-brand-blue hover:underline">
             {t("doctor.login.register")}
           </Link>
-        </p>
-        <p className="mt-3 text-center text-[11px] text-muted-foreground">
-          {t("doctor.login.demoHint")}
         </p>
       </div>
     </div>
