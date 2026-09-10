@@ -148,10 +148,7 @@ export default function ASHAReferrals() {
             Follow-ups
           </Link>
 
-          <Link
-            to="/asha/referrals"
-            className="active"
-          >
+          <Link to="/asha/referrals" className="active">
             <span>🏥</span>
             Referrals
           </Link>
@@ -183,7 +180,6 @@ export default function ASHAReferrals() {
       ===================================================== */}
 
       <main className="asha-main">
-
         {/* HEADER */}
 
         <header className="asha-header">
@@ -226,7 +222,6 @@ export default function ASHAReferrals() {
         ================================================= */}
 
         <section className="stats-grid">
-
           <div className="stat-card">
             <div className="stat-icon">
               <ArrowRight size={24} />
@@ -270,7 +265,6 @@ export default function ASHAReferrals() {
               <strong>{completedCount}</strong>
             </div>
           </div>
-
         </section>
 
         {/* =================================================
@@ -278,10 +272,10 @@ export default function ASHAReferrals() {
         ================================================= */}
 
         <section className="asha-section">
-
           <div className="section-title">
             <div>
               <h2>Patient Referrals</h2>
+
               <p>
                 Monitor referrals from your assigned villages.
               </p>
@@ -296,7 +290,6 @@ export default function ASHAReferrals() {
           </div>
 
           <div className="patient-table">
-
             {/* TABLE HEADER */}
 
             <div className="table-header referral-header">
@@ -315,34 +308,26 @@ export default function ASHAReferrals() {
                 className="patient-row referral-row"
                 key={referral.id}
               >
-
                 {/* PATIENT */}
 
                 <div className="patient-name">
-
                   <div className="patient-avatar">
                     <UserRound size={18} />
                   </div>
 
                   <div>
-                    <strong>
-                      {referral.patient}
-                    </strong>
+                    <strong>{referral.patient}</strong>
 
                     <span>
-                      {referral.age} years •{" "}
-                      {referral.village}
+                      {referral.age} years • {referral.village}
                     </span>
                   </div>
-
                 </div>
 
                 {/* CONDITION */}
 
                 <div>
-                  <strong>
-                    {referral.condition}
-                  </strong>
+                  <strong>{referral.condition}</strong>
 
                   {referral.priority === "High" && (
                     <span className="priority-label">
@@ -354,13 +339,9 @@ export default function ASHAReferrals() {
                 {/* HOSPITAL */}
 
                 <div className="referral-hospital">
-
                   <Hospital size={18} />
 
-                  <span>
-                    {referral.referredTo}
-                  </span>
-
+                  <span>{referral.referredTo}</span>
                 </div>
 
                 {/* DATE */}
@@ -396,114 +377,9 @@ export default function ASHAReferrals() {
                     <ArrowRight size={16} />
                   </button>
                 </div>
-
               </div>
             ))}
-
           </div>
-
-        </section>
-
-        {/* =================================================
-            REFERRAL PROCESS
-        ================================================= */}
-
-        <section className="asha-section">
-
-          <div className="section-title">
-            <div>
-              <h2>Referral Process</h2>
-
-              <p>
-                SwasthyaSetu helps ASHA workers track every step.
-              </p>
-            </div>
-          </div>
-
-          <div className="referral-process">
-
-            <div className="process-step">
-
-              <div className="process-icon">
-                <UserRound size={22} />
-              </div>
-
-              <div>
-                <strong>1. Identify Patient</strong>
-
-                <p>
-                  ASHA worker identifies a patient who
-                  needs additional medical care.
-                </p>
-              </div>
-
-            </div>
-
-            <div className="process-arrow">
-              →
-            </div>
-
-            <div className="process-step">
-
-              <div className="process-icon">
-                <ArrowRight size={22} />
-              </div>
-
-              <div>
-                <strong>2. Create Referral</strong>
-
-                <p>
-                  Patient is referred to the appropriate
-                  PHC, CHC or hospital.
-                </p>
-              </div>
-
-            </div>
-
-            <div className="process-arrow">
-              →
-            </div>
-
-            <div className="process-step">
-
-              <div className="process-icon">
-                <Hospital size={22} />
-              </div>
-
-              <div>
-                <strong>3. Healthcare Facility</strong>
-
-                <p>
-                  Doctor or healthcare staff reviews
-                  the referral.
-                </p>
-              </div>
-
-            </div>
-
-            <div className="process-arrow">
-              →
-            </div>
-
-            <div className="process-step">
-
-              <div className="process-icon">
-                <CheckCircle2 size={22} />
-              </div>
-
-              <div>
-                <strong>4. Follow-up</strong>
-
-                <p>
-                  ASHA worker tracks treatment and
-                  follow-up after referral.
-                </p>
-              </div>
-
-            </div>
-
-          </div>
-
         </section>
 
         {/* =================================================
@@ -511,15 +387,12 @@ export default function ASHAReferrals() {
         ================================================= */}
 
         <section className="asha-section">
-
           <div className="care-reminder">
-
             <div className="care-reminder-icon">
               <Building2 size={24} />
             </div>
 
             <div className="care-reminder-content">
-
               <h3>Rampur Primary Health Centre</h3>
 
               <p>
@@ -528,7 +401,6 @@ export default function ASHAReferrals() {
               </p>
 
               <div className="facility-contact">
-
                 <span>
                   <Phone size={16} />
                   040-12345678
@@ -538,9 +410,7 @@ export default function ASHAReferrals() {
                   <MapPin size={16} />
                   Rampur Village
                 </span>
-
               </div>
-
             </div>
 
             <button
@@ -552,9 +422,7 @@ export default function ASHAReferrals() {
               <Phone size={17} />
               Call PHC
             </button>
-
           </div>
-
         </section>
 
         {/* =================================================
@@ -572,7 +440,6 @@ export default function ASHAReferrals() {
         {/* FOOTER */}
 
         <footer className="asha-footer">
-
           <span>
             ASHA Worker: <strong>Anitha</strong>
           </span>
@@ -580,9 +447,7 @@ export default function ASHAReferrals() {
           <span>
             PHC Contact: <strong>040-12345678</strong>
           </span>
-
         </footer>
-
       </main>
     </div>
   );
