@@ -14,6 +14,8 @@ import {
 
 import "./ASHADashboard.css"
 
+import NearbyHealthcare from "@/components/location/NearbyHealthcare"
+
 export function ASHADashboard() {
   return (
     <div className="asha-dashboard">
@@ -81,7 +83,9 @@ export function ASHADashboard() {
 
       <main className="asha-main">
 
-        {/* HEADER */}
+        {/* =====================================================
+            HEADER
+        ===================================================== */}
 
         <header className="asha-header">
 
@@ -115,7 +119,7 @@ export function ASHADashboard() {
 
 
         {/* =====================================================
-            LOCATION
+            SERVING AREA
         ===================================================== */}
 
         <div className="location-card">
@@ -137,6 +141,16 @@ export function ASHADashboard() {
           </span>
 
         </div>
+
+
+        {/* =====================================================
+            LIVE LOCATION & NEARBY HEALTHCARE
+        ===================================================== */}
+
+        <NearbyHealthcare
+          role="asha"
+          userId={null}
+        />
 
 
         {/* =====================================================
@@ -680,9 +694,20 @@ export function ASHADashboard() {
           </div>
 
           <div>
-            <Phone size={15} style={{ verticalAlign: "middle" }} />{" "}
-            <strong>PHC Contact:</strong>{" "}
+
+            <Phone
+              size={15}
+              style={{
+                verticalAlign: "middle",
+              }}
+            />{" "}
+
+            <strong>
+              PHC Contact:
+            </strong>{" "}
+
             040-12345678
+
           </div>
 
         </footer>
@@ -692,5 +717,11 @@ export function ASHADashboard() {
     </div>
   )
 }
+
+
+/* =========================================================
+   DEFAULT EXPORT
+   Required for React.lazy() routes
+========================================================= */
 
 export default ASHADashboard

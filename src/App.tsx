@@ -19,6 +19,9 @@ import {
 
 import { stopSpeaking } from "@/lib/speech";
 
+// Location test page
+import LocationTest from "@/pages/LocationTest";
+
 /* =========================================================
    ROLE SELECTION
 ========================================================= */
@@ -236,11 +239,9 @@ function StopSpeechOnNavigate() {
 export function App() {
   return (
     <BrowserRouter>
-
       <StopSpeechOnNavigate />
 
       <Suspense fallback={<RouteLoadingFallback />}>
-
         <Routes>
 
           {/* =================================================
@@ -432,6 +433,15 @@ export function App() {
           />
 
           {/* =================================================
+             LOCATION TEST
+          ================================================= */}
+
+          <Route
+            path="/location-test"
+            element={<LocationTest />}
+          />
+
+          {/* =================================================
              FALLBACK
           ================================================= */}
 
@@ -441,9 +451,7 @@ export function App() {
           />
 
         </Routes>
-
       </Suspense>
-
     </BrowserRouter>
   );
 }
