@@ -1,5 +1,8 @@
+import { useEffect, useRef, useState } from "react"
 import { Link, Outlet, useLocation, useNavigate } from "react-router-dom"
 import { useTranslation } from "react-i18next"
+import { useQuery } from "@tanstack/react-query"
+import { toast } from "sonner"
 import {
   BadgeCheck,
   ClipboardList,
@@ -7,6 +10,7 @@ import {
   LayoutDashboard,
   LogOut,
   ShieldCheck,
+  Siren,
   Store,
   Users,
 } from "lucide-react"
@@ -15,7 +19,14 @@ import { OfflineBanner } from "@/components/shared/OfflineBanner"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { cn } from "@/lib/utils"
 import { useSession } from "@/state/session"
-import { MOCK_FACILITIES, MOCK_SPECIALTIES } from "@/mocks/facilities"
+import { getFacilities, getSpecialties } from "@/lib/api/shared"
+import {
+  acknowledgeEmergencyAlert,
+  getEmergencyAlerts,
+  playEmergencyAlertSound,
+  subscribeEmergencyAlerts,
+  type EmergencyAlert,
+} from "@/lib/emergencyAlerts"
 
 export function DoctorLayout() {
   const { t } = useTranslation()
@@ -23,8 +34,36 @@ export function DoctorLayout() {
   const navigate = useNavigate()
   const { staff, setStaff } = useSession()
 
-  const facility = MOCK_FACILITIES.find((f) => f.id === staff?.facilityId)
-  const specialty = MOCK_SPECIALTIES.find((s) => s.id === staff?.specialtyId)
+  const [alerts, setAlerts] = useState<EmergencyAlert[]>([])
+  const seenIds = useRef<Set<string>>(new Set())
+
+  useEffect(() => {
+    const sync = () => {
+      const active = getEmergencyAlerts().filter((a) => a.status === "Active")
+      const hasNew = active.some((a) => !seenIds.current.has(a.id))
+      if (hasNew) {
+        playEmergencyAlertSound()
+        const newest = active.find((a) => !seenIds.current.has(a.id))
+        if (newest) {
+          toast.error(t("doctor.emergencyAlert.toast", { name: newest.patientName }), {
+            duration: 8000,
+          })
+        }
+      }
+      active.forEach((a) => seenIds.current.add(a.id))
+      setAlerts(active)
+    }
+
+    sync()
+    return subscribeEmergencyAlerts(sync)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  const { data: facilities } = useQuery({ queryKey: ["facilities"], queryFn: getFacilities })
+  const { data: specialties } = useQuery({ queryKey: ["specialties"], queryFn: getSpecialties })
+
+  const facility = facilities?.find((f) => f.id === staff?.facilityId)
+  const specialty = specialties?.find((s) => s.id === staff?.specialtyId)
 
   const navItems = [
     { to: "/doctor/dashboard", icon: LayoutDashboard, label: t("doctor.dashboard.title") },
@@ -90,6 +129,44 @@ export function DoctorLayout() {
 
         <div className="flex min-w-0 flex-1 flex-col">
           <OfflineBanner />
+
+          {alerts.length > 0 && (
+            <div className="space-y-2 border-b border-coral/40 bg-coral/10 px-4 py-3 md:px-6">
+              {alerts.map((alert) => (
+                <div
+                  key={alert.id}
+                  className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-coral/40 bg-card px-3 py-2 shadow-sm"
+                >
+                  <div className="flex items-center gap-2.5">
+                    <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-coral text-white">
+                      <Siren className="size-4" />
+                    </span>
+                    <div>
+                      <p className="text-sm font-semibold text-coral">
+                        {t("doctor.emergencyAlert.title", { name: alert.patientName })}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {new Date(alert.createdAt).toLocaleTimeString([], {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                        {" · "}
+                        {alert.facilityName}
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => acknowledgeEmergencyAlert(alert.id)}
+                    className="rounded-lg bg-coral px-3 py-1.5 text-xs font-semibold text-white hover:bg-coral/90"
+                  >
+                    {t("doctor.emergencyAlert.acknowledge")}
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+
           <header className="flex items-center justify-between border-b border-border bg-card px-4 py-3 md:px-6">
             <div className="md:hidden">
               <BrandMark compact />

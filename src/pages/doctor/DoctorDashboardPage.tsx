@@ -1,6 +1,7 @@
 import { useTranslation } from "react-i18next"
-import { useQuery } from "@tanstack/react-query"
+import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { Link } from "react-router-dom"
+import { useRealtimeRefresh } from "@/hooks/useRealtimeRefresh"
 
 import {
   ChevronRight,
@@ -67,6 +68,15 @@ export function DoctorDashboardPage() {
   const { t } = useTranslation()
 
   const { staff } = useSession()
+  const queryClient = useQueryClient()
+
+  useRealtimeRefresh("appointments", () => {
+    queryClient.invalidateQueries({ queryKey: ["doctor-queue", staff?.facilityId] })
+  }, staff ? `facility_id=eq.${staff.facilityId}` : undefined)
+
+  useRealtimeRefresh("referrals", () => {
+    queryClient.invalidateQueries({ queryKey: ["referral-inbox", staff?.facilityId] })
+  }, staff ? `to_facility_id=eq.${staff.facilityId}` : undefined)
 
 
   /* =======================================================

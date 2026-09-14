@@ -10,6 +10,14 @@ import { Label } from "@/components/ui/label"
 import { requestOtp, verifyOtp } from "@/lib/api/patient"
 import { useSession } from "@/state/session"
 
+function getErrorMessage(error: unknown, fallback: string): string {
+  if (error instanceof Error) return error.message
+  if (error && typeof error === "object" && "message" in error && typeof (error as any).message === "string") {
+    return (error as any).message
+  }
+  return fallback
+}
+
 export function PatientLoginPage() {
   const { t } = useTranslation()
   const navigate = useNavigate()
@@ -27,17 +35,27 @@ export function PatientLoginPage() {
       return
     }
     setBusy(true)
-    await requestOtp(phone)
-    setBusy(false)
-    setStep("otp")
+    try {
+      await requestOtp(phone)
+      setStep("otp")
+    } catch (error) {
+      toast.error(getErrorMessage(error, "Unable to send OTP. Please try again."))
+    } finally {
+      setBusy(false)
+    }
   }
 
   async function handleVerify() {
     setBusy(true)
-    const patient = await verifyOtp(phone, otp)
-    setBusy(false)
-    setPatient({ ...patient, isGuardianManaged: guardianMode })
-    navigate("/patient/home")
+    try {
+      const patient = await verifyOtp(phone, otp)
+      setPatient({ ...patient, isGuardianManaged: guardianMode })
+      navigate("/patient/home")
+    } catch (error) {
+      toast.error(getErrorMessage(error, "Invalid or expired OTP. Please try again."))
+    } finally {
+      setBusy(false)
+    }
   }
 
   return (

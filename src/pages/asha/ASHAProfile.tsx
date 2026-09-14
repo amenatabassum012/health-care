@@ -1,436 +1,222 @@
+import { useCallback, useEffect, useState } from "react";
 import {
+  Activity,
   ArrowLeft,
   BriefcaseMedical,
+  Building2,
   CalendarDays,
   CheckCircle2,
-  Edit3,
   Mail,
   MapPin,
   Phone,
   User,
   Users,
   UserRound,
-  Building2,
-  Activity,
 } from "lucide-react";
 
 import { Link } from "react-router-dom";
+import { useSession } from "@/state/session";
+import { supabase } from "@/lib/supabaseClient";
+import { getFacilities } from "@/lib/api/shared";
+import { useRealtimeRefresh } from "@/hooks/useRealtimeRefresh";
 
-import "./ASHADashboard.css";
+function InfoItem({
+  icon: Icon,
+  label,
+  value,
+}: {
+  icon: React.ComponentType<{ className?: string }>;
+  label: string;
+  value: string;
+}) {
+  return (
+    <div className="flex items-center gap-3 rounded-xl border border-border bg-muted/40 p-3.5">
+      <span className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-mint text-teal-dark">
+        <Icon className="size-4" />
+      </span>
+      <div>
+        <span className="block text-xs text-muted-foreground">{label}</span>
+        <strong className="text-sm font-semibold text-foreground">{value}</strong>
+      </div>
+    </div>
+  );
+}
+
+function SectionHeading({
+  icon: Icon,
+  title,
+  subtitle,
+}: {
+  icon: React.ComponentType<{ className?: string }>;
+  title: string;
+  subtitle: string;
+}) {
+  return (
+    <div className="mb-5 flex items-center gap-3 border-b border-border pb-4">
+      <span className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-mint text-teal-dark">
+        <Icon className="size-5" />
+      </span>
+      <div>
+        <h2 className="text-base font-bold text-foreground">{title}</h2>
+        <p className="mt-0.5 text-xs text-muted-foreground">{subtitle}</p>
+      </div>
+    </div>
+  );
+}
 
 export default function ASHAProfile() {
+  const { staff } = useSession();
+  const [facilityName, setFacilityName] = useState("—");
+  const [summary, setSummary] = useState({
+    assignedPatients: 0,
+    patientsServed: 0,
+    referralsCompleted: 0,
+    followUpRate: 0,
+  });
+
+  const load = useCallback(async () => {
+    const [
+      { count: assignedPatients },
+      { count: patientsServed },
+      { count: referralsCompleted },
+      { data: followUps },
+    ] = await Promise.all([
+      supabase.from("patients").select("*", { count: "exact", head: true }),
+      supabase.from("patients").select("*", { count: "exact", head: true }).in("status", ["Stable", "Follow-up"]),
+      supabase.from("referrals").select("*", { count: "exact", head: true }).eq("status", "Completed"),
+      supabase.from("follow_ups").select("status"),
+    ]);
+
+    const reached = (followUps ?? []).filter((f) => f.status === "Reached").length;
+    const followUpRate = followUps?.length ? Math.round((reached / followUps.length) * 100) : 0;
+
+    setSummary({
+      assignedPatients: assignedPatients ?? 0,
+      patientsServed: patientsServed ?? 0,
+      referralsCompleted: referralsCompleted ?? 0,
+      followUpRate,
+    });
+  }, []);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  useRealtimeRefresh("patients", load);
+  useRealtimeRefresh("referrals", load);
+  useRealtimeRefresh("follow_ups", load);
+
+  useEffect(() => {
+    if (!staff?.facilityId) return;
+    getFacilities().then((facilities) => {
+      const facility = facilities.find((f) => f.id === staff.facilityId);
+      if (facility) setFacilityName(facility.name);
+    });
+  }, [staff?.facilityId]);
+
   return (
-    <div className="asha-page">
-      {/* =====================================================
-          SIDEBAR
-      ===================================================== */}
+    <div className="space-y-6">
 
-      <aside className="asha-sidebar">
-        <div className="asha-brand">
-          <div className="asha-brand-icon">
-            <BriefcaseMedical size={24} />
-          </div>
+      {/* HEADER */}
+
+      <div>
+        <h1 className="text-2xl font-bold text-foreground">My Profile</h1>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Manage your ASHA worker information and details.
+        </p>
+      </div>
+
+      <Link
+        to="/asha"
+        className="inline-flex items-center gap-2 text-sm font-semibold text-teal hover:underline"
+      >
+        <ArrowLeft className="size-4" />
+        Back to Dashboard
+      </Link>
+
+      {/* PROFILE HERO CARD */}
+
+      <section className="flex flex-wrap items-center justify-between gap-5 rounded-2xl border border-border bg-card p-6 shadow-sm">
+        <div className="flex items-center gap-4">
+          <span className="flex size-16 shrink-0 items-center justify-center rounded-full bg-mint text-2xl font-bold text-teal-dark">
+            {staff?.name?.charAt(0).toUpperCase() ?? "A"}
+          </span>
 
           <div>
-            <h2>SwasthyaSetu</h2>
-            <span>ASHA Portal</span>
-          </div>
-        </div>
-
-        <nav>
-          <Link to="/asha">
-            <span>🏠</span>
-            <span>Dashboard</span>
-          </Link>
-
-          <Link to="/asha/patients">
-            <span>👥</span>
-            <span>My Patients</span>
-          </Link>
-
-          <Link to="/asha/followups">
-            <span>📅</span>
-            <span>Follow-ups</span>
-          </Link>
-
-          <Link to="/asha/referrals">
-            <span>↗️</span>
-            <span>Referrals</span>
-          </Link>
-
-          <Link to="/asha/high-risk">
-            <span>⚠️</span>
-            <span>High-Risk Patients</span>
-          </Link>
-
-          <Link to="/asha/register">
-            <span>➕</span>
-            <span>Register Patient</span>
-          </Link>
-
-          <Link
-            to="/asha/profile"
-            className="active"
-          >
-            <span>👤</span>
-            <span>My Profile</span>
-          </Link>
-
-          <Link to="/">
-            <span>🚪</span>
-            <span>Logout</span>
-          </Link>
-        </nav>
-      </aside>
-
-      {/* =====================================================
-          MAIN CONTENT
-      ===================================================== */}
-
-      <main className="asha-main">
-        {/* =================================================
-            HEADER
-        ================================================= */}
-
-        <header className="asha-header">
-          <div>
-            <h1>My Profile</h1>
-
-            <p>
-              Manage your ASHA worker information and details.
+            <h2 className="text-xl font-bold text-foreground">{staff?.name ?? "ASHA Worker"}</h2>
+            <p className="mt-1 flex items-center gap-1.5 text-sm text-muted-foreground">
+              <BriefcaseMedical className="size-4 text-teal" />
+              ASHA Worker
+            </p>
+            <p className="mt-1 flex items-center gap-1.5 text-sm text-muted-foreground">
+              <MapPin className="size-4 text-teal" />
+              {facilityName}
             </p>
           </div>
-
-          <div className="asha-header-profile">
-            <div className="asha-profile-avatar">
-              A
-            </div>
-
-            <div>
-              <strong>Anitha</strong>
-              <span>ASHA Worker</span>
-            </div>
-          </div>
-        </header>
-
-        {/* =================================================
-            LOCATION
-        ================================================= */}
-
-        <div className="asha-location">
-          <MapPin size={18} />
-
-          <span>
-            Rampur Village | Rampur Primary Health Centre
-          </span>
         </div>
+      </section>
 
-        {/* =================================================
-            BACK TO DASHBOARD
-        ================================================= */}
+      {/* PERSONAL INFORMATION */}
 
-        <div className="asha-page-actions">
-          <Link
-            to="/asha"
-            className="back-dashboard"
-          >
-            <ArrowLeft size={18} />
-            Back to Dashboard
-          </Link>
+      <section className="rounded-2xl border border-border bg-card p-6 shadow-sm">
+        <SectionHeading
+          icon={UserRound}
+          title="Personal Information"
+          subtitle="Your basic contact information."
+        />
+
+        <div className="grid gap-4 sm:grid-cols-2">
+          <InfoItem icon={User} label="Full Name" value={staff?.name ?? "—"} />
+          <InfoItem icon={BriefcaseMedical} label="Role" value="ASHA Worker" />
+          <InfoItem icon={Phone} label="Phone Number" value={staff?.phone ?? "—"} />
+          <InfoItem icon={Mail} label="Email Address" value={staff?.email ?? "—"} />
         </div>
+      </section>
 
-        {/* =================================================
-            PROFILE HERO CARD
-        ================================================= */}
+      {/* WORK INFORMATION */}
 
-        <section className="profile-hero-card">
-          <div className="profile-hero-left">
-            <div className="profile-large-avatar">
-              A
+      <section className="rounded-2xl border border-border bg-card p-6 shadow-sm">
+        <SectionHeading
+          icon={Building2}
+          title="Work Information"
+          subtitle="Details about your healthcare service area."
+        />
+
+        <div className="grid gap-4 sm:grid-cols-2">
+          <InfoItem icon={Building2} label="Assigned PHC" value={facilityName} />
+          <InfoItem icon={CalendarDays} label="Verification Status" value={staff?.verificationStatus ?? "—"} />
+        </div>
+      </section>
+
+      {/* WORK SUMMARY */}
+
+      <section className="rounded-2xl border border-border bg-card p-6 shadow-sm">
+        <SectionHeading
+          icon={Activity}
+          title="My Work Summary"
+          subtitle="Overview of your healthcare activities."
+        />
+
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {[
+            { icon: Users, value: String(summary.assignedPatients), label: "Assigned Patients" },
+            { icon: UserRound, value: String(summary.patientsServed), label: "Patients Served" },
+            { icon: CheckCircle2, value: String(summary.referralsCompleted), label: "Referrals Completed" },
+            { icon: Activity, value: `${summary.followUpRate}%`, label: "Follow-up Rate" },
+          ].map(({ icon: Icon, value, label }) => (
+            <div
+              key={label}
+              className="rounded-xl border border-border bg-muted/40 p-4 transition-transform hover:-translate-y-0.5"
+            >
+              <span className="mb-3 flex size-10 items-center justify-center rounded-lg bg-mint text-teal-dark">
+                <Icon className="size-5" />
+              </span>
+              <p className="text-2xl font-bold text-foreground">{value}</p>
+              <p className="mt-1 text-xs text-muted-foreground">{label}</p>
             </div>
-
-            <div className="profile-hero-info">
-              <h2>Anitha</h2>
-
-              <p>
-                <BriefcaseMedical size={17} />
-                ASHA Worker
-              </p>
-
-              <p>
-                <MapPin size={17} />
-                Rampur Village
-              </p>
-            </div>
-          </div>
-
-          <button
-            type="button"
-            className="asha-primary-button profile-edit-button"
-            onClick={() =>
-              alert("Edit Profile feature coming soon.")
-            }
-          >
-            <Edit3 size={18} />
-            Edit Profile
-          </button>
-        </section>
-
-        {/* =================================================
-            PERSONAL INFORMATION
-        ================================================= */}
-
-        <section className="profile-section">
-          <div className="profile-section-heading">
-            <div className="profile-section-icon">
-              <UserRound size={22} />
-            </div>
-
-            <div>
-              <h2>Personal Information</h2>
-
-              <p>
-                Your basic contact information.
-              </p>
-            </div>
-          </div>
-
-          <div className="profile-info-grid">
-            {/* FULL NAME */}
-
-            <div className="profile-info-item">
-              <div className="profile-info-icon">
-                <User size={19} />
-              </div>
-
-              <div>
-                <span>Full Name</span>
-                <strong>Anitha</strong>
-              </div>
-            </div>
-
-            {/* ROLE */}
-
-            <div className="profile-info-item">
-              <div className="profile-info-icon">
-                <BriefcaseMedical size={19} />
-              </div>
-
-              <div>
-                <span>Role</span>
-                <strong>ASHA Worker</strong>
-              </div>
-            </div>
-
-            {/* PHONE */}
-
-            <div className="profile-info-item">
-              <div className="profile-info-icon">
-                <Phone size={19} />
-              </div>
-
-              <div>
-                <span>Phone Number</span>
-                <strong>+91 9876543210</strong>
-              </div>
-            </div>
-
-            {/* EMAIL */}
-
-            <div className="profile-info-item">
-              <div className="profile-info-icon">
-                <Mail size={19} />
-              </div>
-
-              <div>
-                <span>Email Address</span>
-                <strong>
-                  anitha@swasthyaSetu.org
-                </strong>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* =================================================
-            WORK INFORMATION
-        ================================================= */}
-
-        <section className="profile-section">
-          <div className="profile-section-heading">
-            <div className="profile-section-icon">
-              <Building2 size={22} />
-            </div>
-
-            <div>
-              <h2>Work Information</h2>
-
-              <p>
-                Details about your healthcare service area.
-              </p>
-            </div>
-          </div>
-
-          <div className="profile-info-grid">
-            {/* PRIMARY VILLAGE */}
-
-            <div className="profile-info-item">
-              <div className="profile-info-icon">
-                <MapPin size={19} />
-              </div>
-
-              <div>
-                <span>Primary Village</span>
-                <strong>Rampur Village</strong>
-              </div>
-            </div>
-
-            {/* ASSIGNED PHC */}
-
-            <div className="profile-info-item">
-              <div className="profile-info-icon">
-                <Building2 size={19} />
-              </div>
-
-              <div>
-                <span>Assigned PHC</span>
-                <strong>
-                  Rampur Primary Health Centre
-                </strong>
-              </div>
-            </div>
-
-            {/* SERVICE AREA */}
-
-            <div className="profile-info-item">
-              <div className="profile-info-icon">
-                <MapPin size={19} />
-              </div>
-
-              <div>
-                <span>Service Area</span>
-                <strong>
-                  Rampur Village / Lakshmipur
-                </strong>
-              </div>
-            </div>
-
-            {/* EXPERIENCE */}
-
-            <div className="profile-info-item">
-              <div className="profile-info-icon">
-                <Activity size={19} />
-              </div>
-
-              <div>
-                <span>Experience</span>
-                <strong>4 Years</strong>
-              </div>
-            </div>
-
-            {/* JOINING DATE */}
-
-            <div className="profile-info-item">
-              <div className="profile-info-icon">
-                <CalendarDays size={19} />
-              </div>
-
-              <div>
-                <span>Joining Date</span>
-                <strong>12 June 2022</strong>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* =================================================
-            WORK SUMMARY
-        ================================================= */}
-
-        <section className="profile-section">
-          <div className="profile-section-heading">
-            <div className="profile-section-icon">
-              <Activity size={22} />
-            </div>
-
-            <div>
-              <h2>My Work Summary</h2>
-
-              <p>
-                Overview of your healthcare activities.
-              </p>
-            </div>
-          </div>
-
-          <div className="profile-summary-grid">
-            {/* ASSIGNED PATIENTS */}
-
-            <div className="profile-summary-card">
-              <div className="profile-summary-icon">
-                <Users size={23} />
-              </div>
-
-              <div>
-                <strong>42</strong>
-                <span>Assigned Patients</span>
-              </div>
-            </div>
-
-            {/* PATIENTS SERVED */}
-
-            <div className="profile-summary-card">
-              <div className="profile-summary-icon">
-                <UserRound size={23} />
-              </div>
-
-              <div>
-                <strong>186</strong>
-                <span>Patients Served</span>
-              </div>
-            </div>
-
-            {/* REFERRALS */}
-
-            <div className="profile-summary-card">
-              <div className="profile-summary-icon">
-                <CheckCircle2 size={23} />
-              </div>
-
-              <div>
-                <strong>27</strong>
-                <span>Referrals Completed</span>
-              </div>
-            </div>
-
-            {/* FOLLOW-UP RATE */}
-
-            <div className="profile-summary-card">
-              <div className="profile-summary-icon">
-                <Activity size={23} />
-              </div>
-
-              <div>
-                <strong>94%</strong>
-                <span>Follow-up Rate</span>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* =================================================
-            FOOTER
-        ================================================= */}
-
-        <footer className="asha-footer">
-          <span>
-            ASHA Worker: <strong>Anitha</strong>
-          </span>
-
-          <span>
-            PHC Contact: <strong>040-12345678</strong>
-          </span>
-        </footer>
-      </main>
+          ))}
+        </div>
+      </section>
     </div>
   );
 }

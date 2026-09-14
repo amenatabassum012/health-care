@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { useTranslation } from "react-i18next"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
@@ -8,8 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { StatusBadge, type StatusTone } from "@/components/shared/StatusBadge"
-import { getShopStock, deleteShopStockItem, upsertShopStockItem } from "@/lib/api/shops"
-import { MOCK_SHOPS } from "@/mocks/shops"
+import { getShopStock, deleteShopStockItem, upsertShopStockItem, getNearbyShops } from "@/lib/api/shops"
 import type { ShopStockItem } from "@/types"
 
 const STATUS_TONE: Record<ShopStockItem["status"], StatusTone> = {
@@ -21,10 +20,15 @@ const STATUS_TONE: Record<ShopStockItem["status"], StatusTone> = {
 export function ShopInventoryPage() {
   const { t } = useTranslation()
   const qc = useQueryClient()
-  const [shopId, setShopId] = useState(MOCK_SHOPS[0]?.id)
+  const { data: shops = [] } = useQuery({ queryKey: ["shops"], queryFn: () => getNearbyShops() })
+  const [shopId, setShopId] = useState<string | undefined>(undefined)
   const [name, setName] = useState("")
   const [category, setCategory] = useState<ShopStockItem["category"]>("Medicine")
   const [status, setStatus] = useState<ShopStockItem["status"]>("Available")
+
+  useEffect(() => {
+    if (!shopId && shops.length > 0) setShopId(shops[0].id)
+  }, [shops, shopId])
 
   const { data: items } = useQuery({
     queryKey: ["shop-inventory", shopId],
@@ -57,7 +61,7 @@ export function ShopInventoryPage() {
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            {MOCK_SHOPS.map((shop) => (
+            {shops.map((shop) => (
               <SelectItem key={shop.id} value={shop.id}>
                 {shop.name} — {shop.address}
               </SelectItem>

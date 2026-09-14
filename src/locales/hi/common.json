@@ -324,6 +324,11 @@
       "queueEmpty": "अभी कतार में कोई मरीज़ नहीं है",
       "referralInboxEmpty": "कोई रेफ़रल लंबित नहीं है"
     },
+    "emergencyAlert": {
+      "title": "{{name}} की ओर से आपातकालीन SOS",
+      "toast": "{{name}} की ओर से आपातकालीन SOS",
+      "acknowledge": "स्वीकार करें"
+    },
     "consultation": {
       "title": "परामर्श",
       "diagnosis": "संरचित निदान",

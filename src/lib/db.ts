@@ -1,19 +1,18 @@
 import Dexie, { type EntityTable } from "dexie"
-import type { Appointment, DoctorFeedback, HealthRecordEntry, Referral, ShopStockItem, StoredCertificate, TriageSession } from "@/types"
+import type { StoredCertificate, TriageSession } from "@/types"
 
 /**
  * Local-first cache per Architecture Specification §6 (Offline-First & Sync Strategy).
- * Triage, health records, and appointment/queue state are readable and writable
- * offline; a background sync layer reconciles with the server when it exists.
+ * Triage sessions and uploaded credential files are readable/writable offline;
+ * everything else (appointments, referrals, health records, feedback, shop
+ * stock) now lives in Supabase as the source of truth.
+ *
+ * Table versions are kept below so existing users' IndexedDB (which already
+ * has tables up to version 3) upgrades cleanly instead of erroring.
  */
 class RuralHealthConnectDB extends Dexie {
   triageSessions!: EntityTable<TriageSession, "id">
-  healthRecords!: EntityTable<HealthRecordEntry, "id">
-  appointments!: EntityTable<Appointment, "id">
-  referrals!: EntityTable<Referral, "id">
   certificateFiles!: EntityTable<StoredCertificate, "id">
-  feedback!: EntityTable<DoctorFeedback, "id">
-  shopStock!: EntityTable<ShopStockItem, "id">
 
   constructor() {
     super("rhc-offline-cache")
@@ -40,6 +39,15 @@ class RuralHealthConnectDB extends Dexie {
       certificateFiles: "id",
       feedback: "id, doctorId, appointmentId, patientId",
       shopStock: "id, shopId",
+    })
+    this.version(4).stores({
+      triageSessions: "id, patientId, createdAt",
+      healthRecords: null,
+      appointments: null,
+      referrals: null,
+      certificateFiles: "id",
+      feedback: null,
+      shopStock: null,
     })
   }
 }

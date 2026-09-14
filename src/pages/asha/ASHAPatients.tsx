@@ -4,7 +4,6 @@ import {
   ArrowLeft,
   BriefcaseMedical,
   Eye,
-  MapPin,
   Phone,
   Search,
   UserPlus,
@@ -14,8 +13,9 @@ import {
 import { Link } from "react-router-dom";
 
 import { supabase } from "@/lib/supabaseClient";
-
-import "./ASHADashboard.css";
+import { useRealtimeRefresh } from "@/hooks/useRealtimeRefresh";
+import { StatusBadge, type StatusTone } from "@/components/shared/StatusBadge";
+import { cn } from "@/lib/utils";
 
 interface ASHAPatient {
   id: string;
@@ -31,6 +31,13 @@ interface ASHAPatient {
   status: string;
   priority: string;
 }
+
+const STATUS_TONE: Record<string, StatusTone> = {
+  New: "info",
+  Stable: "completed",
+  "Follow-up": "pending",
+  Urgent: "emergency",
+};
 
 /* =====================================================
    DEMO PATIENT DATA
@@ -116,102 +123,69 @@ const demoPatients: ASHAPatient[] = [
 
 export default function ASHAPatients() {
   const [patients, setPatients] = useState<ASHAPatient[]>([]);
-
   const [searchTerm, setSearchTerm] = useState("");
-
   const [filter, setFilter] = useState("All");
-
   const [loading, setLoading] = useState(true);
-
   const [error, setError] = useState("");
 
   /* =====================================================
      LOAD PATIENTS
   ===================================================== */
 
-  useEffect(() => {
-    const loadPatients = async () => {
-      setLoading(true);
-      setError("");
+  const loadPatients = async () => {
+    setLoading(true);
+    setError("");
 
-      try {
-        const { data, error: fetchError } = await supabase
-          .from("patients")
-          .select("*")
-          .order("created_at", { ascending: false });
+    try {
+      const { data, error: fetchError } = await supabase
+        .from("patients")
+        .select("*")
+        .order("created_at", { ascending: false });
 
-        /* =================================================
-           IF SUPABASE HAS AN ERROR
-        ================================================= */
-
-        if (fetchError) {
-          console.error("Error loading patients:", fetchError);
-
-          /*
-             Use demo patients so the ASHA portal still
-             shows patient information.
-          */
-          setPatients(demoPatients);
-
-          setError("");
-
-          setLoading(false);
-
-          return;
-        }
-
-        /* =================================================
-           IF SUPABASE HAS PATIENTS
-        ================================================= */
-
-        if (data && data.length > 0) {
-          const formattedPatients: ASHAPatient[] = data.map(
-            (patient) => ({
-              id: patient.id,
-              name: patient.name ?? "",
-              age: Number(patient.age ?? 0),
-              phone: patient.phone ?? "",
-              gender: patient.gender ?? "",
-              village: patient.village ?? "Not provided",
-              address: patient.address ?? "",
-              condition:
-                patient.condition ?? "Not specified",
-              symptoms:
-                patient.symptoms ?? "Not provided",
-              emergencyContact:
-                patient.emergency_contact ?? "",
-              status: patient.status ?? "New",
-              priority: patient.priority ?? "Normal",
-            }),
-          );
-
-          setPatients(formattedPatients);
-        } else {
-          /* ===============================================
-             SUPABASE TABLE EMPTY
-
-             Show the same patients used in the referral
-             section instead of showing 0 patients.
-          =============================================== */
-
-          setPatients(demoPatients);
-        }
-      } catch (err) {
-        console.error("Unexpected error:", err);
-
-        /*
-           Fallback to demo patients.
-        */
+      if (fetchError) {
+        console.error("Error loading patients:", fetchError);
         setPatients(demoPatients);
-
         setError("");
-      } finally {
         setLoading(false);
+        return;
       }
-    };
 
+      if (data && data.length > 0) {
+        const formattedPatients: ASHAPatient[] = data.map((patient) => ({
+          id: patient.id,
+          name: patient.name ?? "",
+          age: Number(patient.age ?? 0),
+          phone: patient.phone ?? "",
+          gender: patient.gender ?? "",
+          village: patient.village ?? "Not provided",
+          address: patient.address ?? "",
+          condition: patient.condition ?? "Not specified",
+          symptoms: patient.symptoms ?? "Not provided",
+          emergencyContact: patient.emergency_contact ?? "",
+          status: patient.status ?? "New",
+          priority: patient.priority ?? "Normal",
+        }));
+
+        setPatients(formattedPatients);
+      } else {
+        setPatients(demoPatients);
+      }
+    } catch (err) {
+      console.error("Unexpected error:", err);
+      setPatients(demoPatients);
+      setError("");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
     loadPatients();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Live-refresh whenever any ASHA worker registers/updates a patient elsewhere.
+  useRealtimeRefresh("patients", loadPatients);
 
   /* =====================================================
      SEARCH + FILTER
@@ -228,459 +202,217 @@ export default function ASHAPatients() {
         patient.phone.includes(search);
 
       const matchesFilter =
-        filter === "All" ||
-        patient.status === filter ||
-        patient.priority === filter;
+        filter === "All" || patient.status === filter || patient.priority === filter;
 
       return matchesSearch && matchesFilter;
     });
   }, [patients, searchTerm, filter]);
 
-  /* =====================================================
-     PAGE
-  ===================================================== */
-
   return (
-    <div className="asha-page">
-      {/* =====================================================
-          SIDEBAR
-      ===================================================== */}
+    <div className="space-y-6">
 
-      <aside className="asha-sidebar">
-        <div className="asha-brand">
-          <div className="asha-brand-icon">
-            <BriefcaseMedical size={24} />
-          </div>
+      {/* HEADER */}
 
-          <div>
-            <h2>SwasthyaSetu</h2>
-            <span>ASHA Portal</span>
-          </div>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-bold text-foreground">My Patients</h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            View and manage patients assigned to you.
+          </p>
         </div>
 
-        <nav>
-          <Link to="/asha">
-            <span>🏠</span>
-            <span>Dashboard</span>
-          </Link>
-
-          <Link
-            to="/asha/patients"
-            className="active"
-          >
-            <span>👥</span>
-            <span>My Patients</span>
-          </Link>
-
-          <Link to="/asha/followups">
-            <span>📅</span>
-            <span>Follow-ups</span>
-          </Link>
-
-          <Link to="/asha/referrals">
-            <span>↗️</span>
-            <span>Referrals</span>
-          </Link>
-
-          <Link to="/asha/high-risk">
-            <span>⚠️</span>
-            <span>High-Risk Patients</span>
-          </Link>
-
-          <Link to="/asha/register">
-            <span>➕</span>
-            <span>Register Patient</span>
-          </Link>
-
-          <Link to="/asha/profile">
-            <span>👤</span>
-            <span>My Profile</span>
-          </Link>
-
-          <Link to="/">
-            <span>🚪</span>
-            <span>Logout</span>
-          </Link>
-        </nav>
-      </aside>
-
-      {/* =====================================================
-          MAIN
-      ===================================================== */}
-
-      <main className="asha-main">
-        {/* HEADER */}
-
-        <header className="asha-header">
-          <div>
-            <h1>My Patients</h1>
-
-            <p>
-              View and manage patients assigned to you.
-            </p>
-          </div>
-
-          <div className="asha-header-profile">
-            <div className="asha-profile-avatar">
-              A
-            </div>
-
-            <div>
-              <strong>Anitha</strong>
-              <span>ASHA Worker</span>
-            </div>
-          </div>
-        </header>
-
-        {/* LOCATION */}
-
-        <div className="asha-location">
-          <MapPin size={18} />
-
-          <span>
-            Rampur Village | Rampur Primary Health Centre
-          </span>
-        </div>
-
-        {/* =====================================================
-            TOP ACTIONS
-        ===================================================== */}
-
-        <div className="asha-page-actions">
+        <div className="flex items-center gap-2">
           <Link
             to="/asha"
-            className="back-dashboard"
+            className="inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-semibold text-teal hover:bg-muted"
           >
-            <ArrowLeft size={18} />
+            <ArrowLeft className="size-4" />
             Back to Dashboard
           </Link>
-
           <Link
             to="/asha/register"
-            className="asha-primary-button"
+            className="inline-flex items-center gap-1.5 rounded-lg bg-teal px-3 py-2 text-sm font-semibold text-white hover:bg-teal-dark"
           >
-            <UserPlus size={18} />
+            <UserPlus className="size-4" />
             Register Patient
           </Link>
         </div>
+      </div>
 
-        {/* =====================================================
-            STAT CARDS
-        ===================================================== */}
+      {/* STAT CARDS */}
 
-        <div className="stats-grid">
-          {/* TOTAL PATIENTS */}
-
-          <div className="stat-card">
-            <div className="stat-icon">
-              <Users size={22} />
-            </div>
-
+      <div className="grid gap-4 sm:grid-cols-3">
+        {[
+          { label: "Total Patients", value: patients.length, icon: Users },
+          {
+            label: "High Priority",
+            value: patients.filter((p) => p.priority === "High").length,
+            icon: BriefcaseMedical,
+          },
+          {
+            label: "Follow-ups",
+            value: patients.filter((p) => p.status === "Follow-up").length,
+            icon: Phone,
+          },
+        ].map(({ label, value, icon: Icon }) => (
+          <div
+            key={label}
+            className="flex items-center gap-4 rounded-2xl border border-border bg-card p-4 shadow-sm"
+          >
+            <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-mint text-teal-dark">
+              <Icon className="size-5" />
+            </span>
             <div>
-              <span>Total Patients</span>
-
-              <strong>
-                {patients.length}
-              </strong>
+              <p className="text-xs text-muted-foreground">{label}</p>
+              <p className="text-2xl font-bold text-foreground">{value}</p>
             </div>
           </div>
+        ))}
+      </div>
 
-          {/* HIGH PRIORITY */}
+      {/* PATIENT RECORDS */}
 
-          <div className="stat-card">
-            <div className="stat-icon">
-              <BriefcaseMedical size={22} />
-            </div>
-
-            <div>
-              <span>High Priority</span>
-
-              <strong>
-                {
-                  patients.filter(
-                    (patient) =>
-                      patient.priority === "High",
-                  ).length
-                }
-              </strong>
-            </div>
-          </div>
-
-          {/* FOLLOW-UPS */}
-
-          <div className="stat-card">
-            <div className="stat-icon">
-              <Phone size={22} />
-            </div>
-
-            <div>
-              <span>Follow-ups</span>
-
-              <strong>
-                {
-                  patients.filter(
-                    (patient) =>
-                      patient.status === "Follow-up",
-                  ).length
-                }
-              </strong>
-            </div>
-          </div>
+      <section>
+        <div className="mb-3">
+          <h2 className="text-sm font-bold uppercase tracking-wide text-muted-foreground">
+            Patient Records
+          </h2>
+          <p className="mt-1 text-xs text-muted-foreground">
+            {filteredPatients.length} patient{filteredPatients.length !== 1 ? "s" : ""} found
+          </p>
         </div>
 
-        {/* =====================================================
-            SEARCH / FILTER
-        ===================================================== */}
+        {/* SEARCH */}
 
-        <section className="patient-table-section">
-          <div className="section-title">
-            <div>
-              <h2>Patient Records</h2>
+        <div className="mb-3 flex max-w-md items-center gap-2 rounded-lg border border-border bg-card px-3 py-2 focus-within:border-teal-mid focus-within:ring-2 focus-within:ring-teal-mid/20">
+          <Search className="size-4 shrink-0 text-muted-foreground" />
+          <input
+            type="text"
+            placeholder="Search by name, village, condition or phone..."
+            value={searchTerm}
+            onChange={(event) => setSearchTerm(event.target.value)}
+            className="w-full bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground"
+          />
+        </div>
 
-              <p>
-                {filteredPatients.length} patient
-                {filteredPatients.length !== 1
-                  ? "s"
-                  : ""}{" "}
-                found
-              </p>
-            </div>
+        {/* FILTERS */}
+
+        <div className="mb-4 flex flex-wrap items-center gap-2">
+          {["All", "New", "Stable", "Follow-up", "Urgent", "High"].map((item) => (
+            <button
+              key={item}
+              type="button"
+              onClick={() => setFilter(item)}
+              className={cn(
+                "rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors",
+                filter === item
+                  ? "border-teal bg-teal text-white"
+                  : "border-border bg-card text-muted-foreground hover:border-teal-mid hover:text-teal"
+              )}
+            >
+              {item}
+            </button>
+          ))}
+        </div>
+
+        {/* ERROR */}
+
+        {error && (
+          <div className="rounded-2xl border border-border bg-card p-8 text-center text-muted-foreground">
+            <h3 className="font-semibold text-foreground">{error}</h3>
+            <p className="mt-1 text-sm">Please check your Supabase connection and try again.</p>
           </div>
+        )}
 
-          {/* SEARCH */}
+        {/* LOADING */}
 
-          <div className="asha-search">
-            <Search size={19} />
-
-            <input
-              type="text"
-              placeholder="Search by name, village, condition or phone..."
-              value={searchTerm}
-              onChange={(event) =>
-                setSearchTerm(event.target.value)
-              }
-            />
+        {loading && !error && (
+          <div className="rounded-2xl border border-border bg-card p-8 text-center text-muted-foreground">
+            <Users className="mx-auto mb-2 size-8" />
+            <h3 className="font-semibold text-foreground">Loading patients...</h3>
+            <p className="mt-1 text-sm">Please wait while we fetch patient records.</p>
           </div>
+        )}
 
-          {/* FILTERS */}
+        {/* PATIENT TABLE */}
 
-          <div className="asha-filters">
-            {[
-              "All",
-              "New",
-              "Stable",
-              "Follow-up",
-              "Urgent",
-              "High",
-            ].map((item) => (
-              <button
-                key={item}
-                type="button"
-                className={
-                  filter === item
-                    ? "active"
-                    : ""
-                }
-                onClick={() =>
-                  setFilter(item)
-                }
-              >
-                {item}
-              </button>
-            ))}
-          </div>
-
-          {/* =================================================
-              ERROR
-          ================================================= */}
-
-          {error && (
-            <div className="asha-empty">
-              <h3>{error}</h3>
-
-              <p>
-                Please check your Supabase connection
-                and try again.
-              </p>
-            </div>
-          )}
-
-          {/* =================================================
-              LOADING
-          ================================================= */}
-
-          {loading && !error && (
-            <div className="asha-empty">
-              <Users size={44} />
-
-              <h3>Loading patients...</h3>
-
-              <p>
-                Please wait while we fetch patient
-                records.
-              </p>
-            </div>
-          )}
-
-          {/* =================================================
-              PATIENT TABLE
-          ================================================= */}
-
-          {!loading &&
-            !error &&
-            filteredPatients.length > 0 && (
-              <div className="patient-table">
-                {/* TABLE HEADER */}
-
-                <div className="table-header">
-                  <span>Patient</span>
-                  <span>Age / Gender</span>
-                  <span>Village</span>
-                  <span>Condition</span>
-                  <span>Status</span>
-                  <span>Action</span>
-                </div>
-
-                {/* PATIENT ROWS */}
-
-                {filteredPatients.map(
-                  (patient) => (
-                    <div
-                      className="patient-row"
-                      key={patient.id}
-                    >
-                      {/* PATIENT */}
-
-                      <div className="patient-info">
-                        <div className="patient-avatar">
-                          {patient.name
-                            .charAt(0)
-                            .toUpperCase()}
-                        </div>
-
-                        <div>
-                          <strong>
-                            {patient.name}
-                          </strong>
-
-                          <span>
-                            {patient.phone}
-                          </span>
-                        </div>
-                      </div>
-
-                      {/* AGE / GENDER */}
-
-                      <div>
-                        {patient.age} /{" "}
-                        {patient.gender}
-                      </div>
-
-                      {/* VILLAGE */}
-
-                      <div>
-                        {patient.village}
-                      </div>
-
-                      {/* CONDITION */}
-
-                      <div>
-                        {patient.condition}
-                      </div>
-
-                      {/* STATUS */}
-
-                      <div>
-                        <span
-                          className={`status-badge ${
-                            patient.status
-                              .toLowerCase()
-                              .replace(
-                                /\s+/g,
-                                "-",
-                              )
-                          }`}
-                        >
-                          {patient.status}
+        {!loading && !error && filteredPatients.length > 0 && (
+          <div className="overflow-x-auto rounded-2xl border border-border bg-card">
+            <table className="w-full min-w-[720px] text-sm">
+              <thead>
+                <tr className="border-b border-border bg-muted/50 text-left text-xs font-bold uppercase tracking-wide text-muted-foreground">
+                  <th className="px-4 py-3">Patient</th>
+                  <th className="px-4 py-3">Age / Gender</th>
+                  <th className="px-4 py-3">Village</th>
+                  <th className="px-4 py-3">Condition</th>
+                  <th className="px-4 py-3">Status</th>
+                  <th className="px-4 py-3">Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredPatients.map((patient) => (
+                  <tr key={patient.id} className="border-b border-border last:border-0 hover:bg-muted/40">
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-3">
+                        <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-mint text-sm font-bold text-teal-dark">
+                          {patient.name.charAt(0).toUpperCase()}
                         </span>
+                        <div>
+                          <p className="font-semibold text-foreground">{patient.name}</p>
+                          <p className="text-xs text-muted-foreground">{patient.phone}</p>
+                        </div>
                       </div>
+                    </td>
+                    <td className="px-4 py-3 text-foreground">
+                      {patient.age} / {patient.gender}
+                    </td>
+                    <td className="px-4 py-3 text-foreground">{patient.village}</td>
+                    <td className="px-4 py-3 text-foreground">{patient.condition}</td>
+                    <td className="px-4 py-3">
+                      <StatusBadge
+                        tone={STATUS_TONE[patient.status] ?? "info"}
+                        label={patient.status}
+                      />
+                    </td>
+                    <td className="px-4 py-3">
+                      <button
+                        type="button"
+                        title={`View ${patient.name}`}
+                        onClick={() =>
+                          alert(
+                            `${patient.name}\n\nAge: ${patient.age}\nGender: ${patient.gender}\nVillage: ${patient.village}\nAddress: ${patient.address}\nCondition: ${patient.condition}\nSymptoms: ${patient.symptoms}\nPhone: ${patient.phone}\nEmergency Contact: ${patient.emergencyContact}`
+                          )
+                        }
+                        className="inline-flex items-center gap-1.5 rounded-lg border border-border px-2.5 py-1.5 text-xs font-semibold text-teal hover:bg-muted"
+                      >
+                        <Eye className="size-3.5" />
+                        View
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
 
-                      {/* ACTION */}
+        {/* NO PATIENTS */}
 
-                      <div>
-                        <button
-                          type="button"
-                          className="asha-view-button"
-                          title={`View ${patient.name}`}
-                          onClick={() =>
-                            alert(
-                              `${patient.name}
-
-Age: ${patient.age}
-Gender: ${patient.gender}
-Village: ${patient.village}
-Address: ${patient.address}
-Condition: ${patient.condition}
-Symptoms: ${patient.symptoms}
-Phone: ${patient.phone}
-Emergency Contact: ${patient.emergencyContact}`,
-                            )
-                          }
-                        >
-                          <Eye size={17} />
-                          View
-                        </button>
-                      </div>
-                    </div>
-                  ),
-                )}
-              </div>
-            )}
-
-          {/* =================================================
-              NO PATIENTS
-          ================================================= */}
-
-          {!loading &&
-            !error &&
-            filteredPatients.length === 0 && (
-              <div className="asha-empty">
-                <Users size={44} />
-
-                <h3>
-                  No patients found
-                </h3>
-
-                <p>
-                  Try changing your search or
-                  filter.
-                </p>
-
-                <Link
-                  to="/asha/register"
-                  className="asha-primary-button"
-                >
-                  <UserPlus size={18} />
-                  Register New Patient
-                </Link>
-              </div>
-            )}
-        </section>
-
-        {/* =====================================================
-            FOOTER
-        ===================================================== */}
-
-        <footer className="asha-footer">
-          <span>
-            ASHA Worker: Anitha
-          </span>
-
-          <span>
-            PHC Contact: 040-12345678
-          </span>
-        </footer>
-      </main>
+        {!loading && !error && filteredPatients.length === 0 && (
+          <div className="rounded-2xl border border-border bg-card p-8 text-center text-muted-foreground">
+            <Users className="mx-auto mb-2 size-8" />
+            <h3 className="font-semibold text-foreground">No patients found</h3>
+            <p className="mt-1 text-sm">Try changing your search or filter.</p>
+            <Link
+              to="/asha/register"
+              className="mt-4 inline-flex items-center gap-1.5 rounded-lg bg-teal px-3 py-2 text-sm font-semibold text-white hover:bg-teal-dark"
+            >
+              <UserPlus className="size-4" />
+              Register New Patient
+            </Link>
+          </div>
+        )}
+      </section>
     </div>
   );
 }

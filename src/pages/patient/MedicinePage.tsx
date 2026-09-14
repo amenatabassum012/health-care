@@ -9,7 +9,7 @@ import { EmptyState } from "@/components/shared/EmptyState"
 import { EmptyMedicine } from "@/components/illustrations/EmptyMedicine"
 import { searchStock } from "@/lib/api/patient"
 import { getNearbyShops, searchShopStock } from "@/lib/api/shops"
-import { MOCK_FACILITIES } from "@/mocks/facilities"
+import { getFacilities } from "@/lib/api/shared"
 import { useGeolocation } from "@/hooks/useGeolocation"
 import { distanceKm, KNOWN_LOCALITIES } from "@/lib/geo"
 import type { StockItem } from "@/types"
@@ -26,6 +26,7 @@ export function MedicinePage() {
   const [showLocalityPicker, setShowLocalityPicker] = useState(false)
   const [manualInput, setManualInput] = useState("")
   const { coords, status, requestLocation, setManualLocation } = useGeolocation()
+  const { data: facilities = [] } = useQuery({ queryKey: ["facilities"], queryFn: getFacilities })
 
   const manualMatches = useMemo(() => {
     const q = manualInput.trim().toLowerCase()
@@ -34,13 +35,13 @@ export function MedicinePage() {
   }, [manualInput])
 
   const rankedFacilities = useMemo(() => {
-    if (!coords) return MOCK_FACILITIES
-    return [...MOCK_FACILITIES].sort(
+    if (!coords) return facilities
+    return [...facilities].sort(
       (a, b) =>
         distanceKm(coords.latitude, coords.longitude, a.latitude ?? 0, a.longitude ?? 0) -
         distanceKm(coords.latitude, coords.longitude, b.latitude ?? 0, b.longitude ?? 0)
     )
-  }, [coords])
+  }, [coords, facilities])
 
   const homeFacility = rankedFacilities[0]
   const nearestFacility = rankedFacilities[1]

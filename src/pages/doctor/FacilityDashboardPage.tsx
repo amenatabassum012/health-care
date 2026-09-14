@@ -2,7 +2,7 @@ import { useTranslation } from "react-i18next"
 import { useQuery } from "@tanstack/react-query"
 import { Activity, ClipboardCheck, Gauge, Package, Users } from "lucide-react"
 import { getFacilityMetrics } from "@/lib/api/doctor"
-import { MOCK_STOCK } from "@/mocks/patients"
+import { searchStock } from "@/lib/api/patient"
 import { StatusBadge, type StatusTone } from "@/components/shared/StatusBadge"
 import { useSession } from "@/state/session"
 import { cn } from "@/lib/utils"
@@ -51,7 +51,11 @@ export function FacilityDashboardPage() {
     enabled: !!staff,
   })
 
-  const stock = MOCK_STOCK.filter((s) => s.facilityId === staff?.facilityId)
+  const { data: stock = [] } = useQuery({
+    queryKey: ["facility-stock", staff?.facilityId],
+    queryFn: () => searchStock(staff!.facilityId, ""),
+    enabled: !!staff,
+  })
 
   return (
     <div className="space-y-6">

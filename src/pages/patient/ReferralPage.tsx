@@ -1,11 +1,12 @@
 import { useTranslation } from "react-i18next"
-import { useQuery } from "@tanstack/react-query"
+import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { Check, Circle, Clock3 } from "lucide-react"
 import { EmptyState } from "@/components/shared/EmptyState"
 import { AllCaughtUp } from "@/components/illustrations/AllCaughtUp"
 import { getReferrals } from "@/lib/api/patient"
 import { getFacilities, getSpecialties, getStaff } from "@/lib/api/shared"
 import { useSession } from "@/state/session"
+import { useRealtimeRefresh } from "@/hooks/useRealtimeRefresh"
 import type { ReferralStatus } from "@/types"
 import { cn } from "@/lib/utils"
 
@@ -14,6 +15,7 @@ const STAGES: ReferralStatus[] = ["Pending", "Confirmed", "Completed"]
 export function ReferralPage() {
   const { t } = useTranslation()
   const { patient } = useSession()
+  const queryClient = useQueryClient()
 
   const { data: referrals } = useQuery({
     queryKey: ["referrals", patient?.id],
@@ -23,6 +25,12 @@ export function ReferralPage() {
   const { data: facilities } = useQuery({ queryKey: ["facilities"], queryFn: getFacilities })
   const { data: specialties } = useQuery({ queryKey: ["specialties"], queryFn: getSpecialties })
   const { data: staff } = useQuery({ queryKey: ["staff"], queryFn: getStaff })
+
+  useRealtimeRefresh(
+    "referrals",
+    () => queryClient.invalidateQueries({ queryKey: ["referrals", patient?.id] }),
+    patient ? `patient_id=eq.${patient.id}` : undefined
+  )
 
   return (
     <div className="space-y-6">

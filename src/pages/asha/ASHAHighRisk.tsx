@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   AlertTriangle,
   ArrowLeft,
@@ -10,12 +10,15 @@ import {
   Search,
   UserRound,
 } from "lucide-react";
-import "./ASHADashboard.css";
+import { Link } from "react-router-dom";
+import { cn } from "@/lib/utils";
+import { supabase } from "@/lib/supabaseClient";
+import { useRealtimeRefresh } from "@/hooks/useRealtimeRefresh";
 
 type RiskLevel = "Critical" | "High";
 
 interface HighRiskPatient {
-  id: number;
+  id: string;
   name: string;
   age: number;
   village: string;
@@ -27,84 +30,51 @@ interface HighRiskPatient {
   phone: string;
 }
 
-const patients: HighRiskPatient[] = [
-  {
-    id: 1,
-    name: "Sita Devi",
-    age: 29,
-    village: "Lakshmipur",
-    condition: "High Blood Pressure",
-    symptoms: "Severe headache, dizziness",
-    risk: "Critical",
-    lastVisit: "Today, 09:00 AM",
-    nextAction: "Immediate PHC review",
-    phone: "9876543210",
-  },
-  {
-    id: 2,
-    name: "Mohammed Rahim",
-    age: 63,
-    village: "Rampur Village",
-    condition: "Diabetes",
-    symptoms: "High sugar, weakness",
-    risk: "High",
-    lastVisit: "Yesterday, 03:00 PM",
-    nextAction: "Doctor consultation",
-    phone: "9876543211",
-  },
-  {
-    id: 3,
-    name: "Lakshmi Rao",
-    age: 51,
-    village: "Lakshmipur",
-    condition: "Hypertension",
-    symptoms: "Chest discomfort, fatigue",
-    risk: "High",
-    lastVisit: "05 Sep 2026",
-    nextAction: "BP monitoring",
-    phone: "9876543212",
-  },
-  {
-    id: 4,
-    name: "Ramesh Kumar",
-    age: 55,
-    village: "Rampur Village",
-    condition: "Diabetes",
-    symptoms: "Increased thirst, weakness",
-    risk: "High",
-    lastVisit: "04 Sep 2026",
-    nextAction: "Blood sugar test",
-    phone: "9876543213",
-  },
-  {
-    id: 5,
-    name: "Anita Devi",
-    age: 42,
-    village: "Rampur Village",
-    condition: "Hypertension",
-    symptoms: "High BP reading",
-    risk: "High",
-    lastVisit: "03 Sep 2026",
-    nextAction: "Follow-up visit",
-    phone: "9876543214",
-  },
-];
-
 export default function ASHAHighRisk() {
   const [search, setSearch] = useState("");
+  const [patients, setPatients] = useState<HighRiskPatient[]>([]);
+
+  const load = useCallback(async () => {
+    const { data, error } = await supabase
+      .from("patients")
+      .select("*")
+      .eq("priority", "High")
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      console.error("Error loading high-risk patients:", error);
+      return;
+    }
+
+    setPatients(
+      (data ?? []).map((p) => ({
+        id: p.id,
+        name: p.name,
+        age: p.age ?? 0,
+        village: p.village ?? "—",
+        condition: p.condition ?? "Not specified",
+        symptoms: p.symptoms ?? "Not provided",
+        risk: (p.risk === "Critical" ? "Critical" : "High") as RiskLevel,
+        lastVisit: p.last_visit ?? "Not recorded",
+        nextAction: p.next_action ?? "Schedule follow-up",
+        phone: p.phone ?? "",
+      }))
+    );
+  }, []);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  useRealtimeRefresh("patients", load);
 
   const filteredPatients = patients.filter((patient) => {
     const text = `${patient.name} ${patient.condition} ${patient.village}`;
     return text.toLowerCase().includes(search.toLowerCase());
   });
 
-  const criticalCount = patients.filter(
-    (patient) => patient.risk === "Critical",
-  ).length;
-
-  const highCount = patients.filter(
-    (patient) => patient.risk === "High",
-  ).length;
+  const criticalCount = patients.filter((patient) => patient.risk === "Critical").length;
+  const highCount = patients.filter((patient) => patient.risk === "High").length;
 
   const callPatient = (phone: string) => {
     window.location.href = `tel:${phone}`;
@@ -112,260 +82,186 @@ export default function ASHAHighRisk() {
 
   const openPatient = (patient: HighRiskPatient) => {
     alert(
-      `Patient: ${patient.name}\nCondition: ${patient.condition}\nRisk: ${patient.risk}\nNext Action: ${patient.nextAction}`,
+      `Patient: ${patient.name}\nCondition: ${patient.condition}\nRisk: ${patient.risk}\nNext Action: ${patient.nextAction}`
     );
   };
 
   return (
-    <div className="asha-page">
-      {/* SIDEBAR */}
-      <aside className="asha-sidebar">
-        <div className="asha-logo">
-          💗 <span>SwasthyaSetu</span>
-        </div>
+    <div className="space-y-6">
 
-        <nav className="asha-nav">
-          <a href="/asha">🏠 Dashboard</a>
+      {/* HEADER */}
 
-          <a href="/asha/patients">👥 My Patients</a>
+      <div>
+        <h1 className="text-2xl font-bold text-foreground">High-Risk Patients</h1>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Monitor patients who require urgent attention and follow-up.
+        </p>
+      </div>
 
-          <a href="/asha/followups">📋 Follow-ups</a>
+      {/* SUMMARY CARDS */}
 
-          <a href="/asha/referrals">🚨 Referrals</a>
-
-          <a
-            href="/asha/high-risk"
-            className="active"
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        {[
+          { label: "High-Risk Patients", value: patients.length, icon: AlertTriangle, tone: "bg-coral/10 text-coral" },
+          { label: "Critical", value: criticalCount, icon: Bell, tone: "bg-coral/10 text-coral" },
+          { label: "High Risk", value: highCount, icon: Clock, tone: "bg-warning/10 text-warning" },
+          { label: "Needs Attention Today", value: 3, icon: Calendar, tone: "bg-mint text-teal-dark" },
+        ].map(({ label, value, icon: Icon, tone }) => (
+          <div
+            key={label}
+            className="flex items-center gap-4 rounded-2xl border border-border bg-card p-4 shadow-sm"
           >
-            ⚠️ High-Risk Patients
-          </a>
-
-          <a href="/asha/register">➕ Register Patient</a>
-
-          <a href="/asha/profile">👤 My Profile</a>
-
-          <a href="/">🚪 Logout</a>
-        </nav>
-      </aside>
-
-      {/* MAIN CONTENT */}
-      <main className="asha-main">
-        {/* HEADER */}
-        <header className="asha-header">
-          <div>
-            <h1>High-Risk Patients</h1>
-            <p>
-              Monitor patients who require urgent attention and follow-up.
-            </p>
-          </div>
-
-          <div className="asha-profile">
-            <div className="profile-avatar">A</div>
-
+            <span className={cn("flex size-11 shrink-0 items-center justify-center rounded-xl", tone)}>
+              <Icon className="size-5" />
+            </span>
             <div>
-              <strong>Anitha</strong>
-              <span>ASHA Worker</span>
+              <p className="text-xs text-muted-foreground">{label}</p>
+              <p className="text-2xl font-bold text-foreground">{value}</p>
             </div>
           </div>
-        </header>
+        ))}
+      </div>
 
-        {/* LOCATION */}
-        <div className="asha-location">
-          📍 <strong>Serving:</strong> Rampur Village
-          <span> | </span>
-          <strong>PHC:</strong> Rampur Primary Health Centre
+      {/* SEARCH */}
+
+      <section>
+        <div className="mb-3">
+          <h2 className="text-sm font-bold uppercase tracking-wide text-muted-foreground">
+            Patients Requiring Attention
+          </h2>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Prioritize these patients based on their current health risk.
+          </p>
         </div>
 
-        {/* SUMMARY CARDS */}
-        <section className="stats-grid">
-          <div className="stat-card">
-            <div className="stat-icon danger">
-              <AlertTriangle size={24} />
-            </div>
-
-            <div>
-              <span>High-Risk Patients</span>
-              <strong>{patients.length}</strong>
-            </div>
-          </div>
-
-          <div className="stat-card">
-            <div className="stat-icon critical">
-              <Bell size={24} />
-            </div>
-
-            <div>
-              <span>Critical</span>
-              <strong>{criticalCount}</strong>
-            </div>
-          </div>
-
-          <div className="stat-card">
-            <div className="stat-icon warning">
-              <Clock size={24} />
-            </div>
-
-            <div>
-              <span>High Risk</span>
-              <strong>{highCount}</strong>
-            </div>
-          </div>
-
-          <div className="stat-card">
-            <div className="stat-icon">
-              <Calendar size={24} />
-            </div>
-
-            <div>
-              <span>Needs Attention Today</span>
-              <strong>3</strong>
-            </div>
-          </div>
-        </section>
-
-        {/* SEARCH */}
-        <section className="asha-section">
-          <div className="section-title">
-            <div>
-              <h2>Patients Requiring Attention</h2>
-              <p>
-                Prioritize these patients based on their current health risk.
-              </p>
-            </div>
-          </div>
-
-          <div className="asha-search">
-            <Search size={20} />
-
-            <input
-              type="text"
-              placeholder="Search patient, condition or village..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
-          </div>
-        </section>
+        <div className="mb-4 flex max-w-md items-center gap-2 rounded-lg border border-border bg-card px-3 py-2 focus-within:border-teal-mid focus-within:ring-2 focus-within:ring-teal-mid/20">
+          <Search className="size-4 shrink-0 text-muted-foreground" />
+          <input
+            type="text"
+            placeholder="Search patient, condition or village..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground"
+          />
+        </div>
 
         {/* PATIENT CARDS */}
-        <section className="high-risk-list">
+
+        <div className="space-y-4">
           {filteredPatients.map((patient) => (
             <div
-              className="high-risk-card"
               key={patient.id}
+              className="grid gap-4 rounded-2xl border border-border bg-card p-5 shadow-sm lg:grid-cols-[1.5fr_1fr_auto] lg:items-center"
             >
-              <div className="high-risk-main">
-                <div className="patient-avatar">
-                  <UserRound size={25} />
-                </div>
+              <div className="flex items-start gap-4">
+                <span className="flex size-11 shrink-0 items-center justify-center rounded-full bg-mint text-teal-dark">
+                  <UserRound className="size-5" />
+                </span>
 
-                <div className="patient-details">
-                  <div className="patient-name-row">
-                    <h3>{patient.name}</h3>
-
+                <div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h3 className="text-base font-bold text-foreground">{patient.name}</h3>
                     <span
-                      className={
+                      className={cn(
+                        "rounded-full px-2.5 py-1 text-[11px] font-bold",
                         patient.risk === "Critical"
-                          ? "risk-badge critical-risk"
-                          : "risk-badge high-risk"
-                      }
+                          ? "bg-coral/10 text-coral"
+                          : "bg-warning/10 text-warning"
+                      )}
                     >
                       {patient.risk}
                     </span>
                   </div>
 
-                  <p>
-                    {patient.age} years • {patient.village}
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    {patient.age} years · {patient.village}
                   </p>
 
-                  <strong>{patient.condition}</strong>
+                  <strong className="mt-1.5 block text-sm font-semibold text-foreground">
+                    {patient.condition}
+                  </strong>
 
-                  <p className="symptoms">
-                    <AlertTriangle size={15} />
+                  <p className="mt-1 flex items-center gap-1.5 text-sm text-coral">
+                    <AlertTriangle className="size-3.5" />
                     {patient.symptoms}
                   </p>
                 </div>
               </div>
 
-              <div className="high-risk-info">
+              <div className="flex flex-wrap gap-4 lg:flex-col lg:gap-2.5">
                 <div>
-                  <span>Last Visit</span>
-                  <strong>{patient.lastVisit}</strong>
+                  <span className="block text-xs text-muted-foreground">Last Visit</span>
+                  <strong className="text-sm font-semibold text-foreground">{patient.lastVisit}</strong>
                 </div>
-
                 <div>
-                  <span>Next Action</span>
-                  <strong>{patient.nextAction}</strong>
+                  <span className="block text-xs text-muted-foreground">Next Action</span>
+                  <strong className="text-sm font-semibold text-foreground">{patient.nextAction}</strong>
                 </div>
               </div>
 
-              <div className="high-risk-actions">
+              <div className="flex gap-2 lg:flex-col">
                 <button
-                  className="asha-secondary-button"
+                  type="button"
                   onClick={() => callPatient(patient.phone)}
+                  className="flex flex-1 items-center justify-center gap-1.5 rounded-lg border border-border bg-card px-3 py-2 text-sm font-semibold text-teal hover:bg-muted lg:flex-none"
                 >
-                  <Phone size={17} />
+                  <Phone className="size-4" />
                   Call
                 </button>
 
                 <button
-                  className="asha-primary-button"
+                  type="button"
                   onClick={() => openPatient(patient)}
+                  className="flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-teal px-3 py-2 text-sm font-semibold text-white hover:bg-teal-dark lg:flex-none"
                 >
                   View Patient
-                  <ChevronRight size={17} />
+                  <ChevronRight className="size-4" />
                 </button>
               </div>
             </div>
           ))}
 
           {filteredPatients.length === 0 && (
-            <div className="asha-empty">
-              <Search size={35} />
-              <h3>No patients found</h3>
-              <p>Try searching with another name or condition.</p>
+            <div className="rounded-2xl border border-border bg-card p-8 text-center text-muted-foreground">
+              <Search className="mx-auto mb-2 size-8" />
+              <h3 className="font-semibold text-foreground">No patients found</h3>
+              <p className="mt-1 text-sm">Try searching with another name or condition.</p>
             </div>
           )}
-        </section>
+        </div>
+      </section>
 
-        {/* EMERGENCY NOTICE */}
-        <section className="high-risk-notice">
-          <AlertTriangle size={25} />
+      {/* EMERGENCY NOTICE */}
 
-          <div>
-            <h3>Emergency Reminder</h3>
+      <div className="flex flex-wrap items-center gap-4 rounded-2xl border border-warning/30 bg-warning/10 p-5">
+        <AlertTriangle className="size-6 shrink-0 text-warning" />
 
-            <p>
-              If a patient has severe symptoms or their condition suddenly
-              worsens, contact the PHC immediately or use the emergency
-              referral process.
-            </p>
-          </div>
+        <div className="flex-1">
+          <h3 className="text-sm font-bold text-foreground">Emergency Reminder</h3>
+          <p className="mt-1 text-sm text-foreground/80">
+            If a patient has severe symptoms or their condition suddenly worsens, contact the PHC
+            immediately or use the emergency referral process.
+          </p>
+        </div>
 
-          <button
-            onClick={() =>
-              alert("PHC Rampur Emergency Contact: 040-12345678")
-            }
-          >
-            Contact PHC
-          </button>
-        </section>
-
-        {/* BACK */}
         <button
-          className="back-dashboard"
-          onClick={() => {
-            window.location.href = "/asha";
-          }}
+          type="button"
+          onClick={() => alert("PHC Rampur Emergency Contact: 040-12345678")}
+          className="rounded-lg bg-teal px-4 py-2 text-sm font-semibold text-white hover:bg-teal-dark"
         >
-          <ArrowLeft size={18} />
-          Back to Dashboard
+          Contact PHC
         </button>
+      </div>
 
-        <footer className="asha-footer">
-          <span>ASHA Worker: Anitha</span>
-          <span>PHC Contact: 040-12345678</span>
-        </footer>
-      </main>
+      {/* BACK */}
+
+      <Link
+        to="/asha"
+        className="inline-flex items-center gap-2 text-sm font-semibold text-teal hover:underline"
+      >
+        <ArrowLeft className="size-4" />
+        Back to Dashboard
+      </Link>
     </div>
   );
 }

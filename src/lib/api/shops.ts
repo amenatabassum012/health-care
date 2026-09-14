@@ -1,20 +1,38 @@
-import { db } from "@/lib/db"
 import { distanceKm } from "@/lib/geo"
-import { MOCK_SHOPS, MOCK_SHOP_STOCK } from "@/mocks/shops"
+import { supabase } from "@/lib/supabaseClient"
 import type { MedicalShop, ShopStockItem } from "@/types"
-import { networkDelay } from "./delay"
 
-/** Seeds the offline cache from mock data the first time it's read, so admin edits persist locally afterwards. */
-async function ensureShopStockSeeded() {
-  const count = await db.shopStock.count()
-  if (count === 0) await db.shopStock.bulkPut(MOCK_SHOP_STOCK)
+function mapShop(row: any): MedicalShop {
+  return {
+    id: row.id,
+    name: row.name,
+    address: row.address,
+    district: row.district,
+    state: row.state,
+    phone: row.phone ?? undefined,
+    latitude: row.latitude,
+    longitude: row.longitude,
+  }
+}
+
+function mapShopStock(row: any): ShopStockItem {
+  return {
+    id: row.id,
+    shopId: row.shop_id,
+    name: row.name,
+    category: row.category,
+    status: row.status,
+    updatedAt: row.updated_at,
+  }
 }
 
 export async function getNearbyShops(
   origin?: { latitude: number; longitude: number }
 ): Promise<(MedicalShop & { distanceKm?: number })[]> {
-  await networkDelay(350)
-  const shops = MOCK_SHOPS.map((shop) => ({
+  const { data, error } = await supabase.from("medical_shops").select("*")
+  if (error) throw error
+
+  const shops = (data ?? []).map(mapShop).map((shop) => ({
     ...shop,
     distanceKm: origin ? distanceKm(origin.latitude, origin.longitude, shop.latitude, shop.longitude) : undefined,
   }))
@@ -22,29 +40,39 @@ export async function getNearbyShops(
 }
 
 export async function searchShopStock(shopId: string, query: string): Promise<ShopStockItem[]> {
-  await networkDelay(300)
-  await ensureShopStockSeeded()
-  const q = query.trim().toLowerCase()
-  return db.shopStock
-    .where("shopId")
-    .equals(shopId)
-    .filter((s) => !q || s.name.toLowerCase().includes(q))
-    .toArray()
+  const q = query.trim()
+  let request = supabase.from("shop_stock").select("*").eq("shop_id", shopId)
+  if (q) request = request.ilike("name", `%${q}%`)
+  const { data, error } = await request
+  if (error) throw error
+  return (data ?? []).map(mapShopStock)
 }
 
 export async function getShopStock(shopId: string): Promise<ShopStockItem[]> {
-  await ensureShopStockSeeded()
-  return db.shopStock.where("shopId").equals(shopId).toArray()
+  const { data, error } = await supabase.from("shop_stock").select("*").eq("shop_id", shopId)
+  if (error) throw error
+  return (data ?? []).map(mapShopStock)
 }
 
 export async function upsertShopStockItem(item: Omit<ShopStockItem, "updatedAt"> & { updatedAt?: string }): Promise<ShopStockItem> {
-  await networkDelay(300)
-  const saved: ShopStockItem = { ...item, updatedAt: new Date().toISOString() }
-  await db.shopStock.put(saved)
-  return saved
+  const { data, error } = await supabase
+    .from("shop_stock")
+    .upsert({
+      id: item.id,
+      shop_id: item.shopId,
+      name: item.name,
+      category: item.category,
+      status: item.status,
+      updated_at: item.updatedAt ?? new Date().toISOString(),
+    })
+    .select()
+    .single()
+
+  if (error) throw error
+  return mapShopStock(data)
 }
 
 export async function deleteShopStockItem(id: string): Promise<void> {
-  await networkDelay(200)
-  await db.shopStock.delete(id)
+  const { error } = await supabase.from("shop_stock").delete().eq("id", id)
+  if (error) throw error
 }

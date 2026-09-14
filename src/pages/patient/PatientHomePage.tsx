@@ -17,15 +17,18 @@ import {
 import { ActionCard } from "@/components/shared/ActionCard"
 import { StatusBadge } from "@/components/shared/StatusBadge"
 import { getHomeSummary } from "@/lib/api/patient"
+import { useSession } from "@/state/session"
 
 import NearbyHealthcare from "@/components/location/NearbyHealthcare"
 
 export function PatientHomePage() {
   const { t } = useTranslation()
+  const { patient } = useSession()
 
   const { data } = useQuery({
-    queryKey: ["home-summary"],
-    queryFn: getHomeSummary,
+    queryKey: ["home-summary", patient?.id],
+    queryFn: () => getHomeSummary(patient!.id),
+    enabled: !!patient?.id,
   })
 
   return (

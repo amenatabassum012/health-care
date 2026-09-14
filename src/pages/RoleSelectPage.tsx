@@ -92,7 +92,7 @@ export function RoleSelectPage() {
 
           {/* ================= ASHA WORKER ================= */}
           <Link
-            to="/asha"
+            to="/asha/login"
             className="group flex flex-col items-center gap-4 rounded-3xl border border-border bg-card p-8 text-center shadow-sm transition-[transform,border-color,box-shadow] hover:-translate-y-1 hover:border-teal hover:shadow-xl"
           >
             <span className="flex size-16 items-center justify-center rounded-2xl bg-mint text-teal-dark transition-colors group-hover:bg-teal group-hover:text-white">

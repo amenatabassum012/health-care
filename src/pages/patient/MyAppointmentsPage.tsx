@@ -20,6 +20,7 @@ import {
 import { cancelAppointment, getAppointments, getFeedbackForAppointment, submitFeedback } from "@/lib/api/patient"
 import { getFacilities, getStaff } from "@/lib/api/shared"
 import { useSession } from "@/state/session"
+import { useRealtimeRefresh } from "@/hooks/useRealtimeRefresh"
 import type { Appointment, AppointmentStatus, Facility, StaffUser } from "@/types"
 import { cn } from "@/lib/utils"
 
@@ -327,6 +328,7 @@ function AppointmentCard({
 export function MyAppointmentsPage() {
   const { t, i18n } = useTranslation()
   const { patient } = useSession()
+  const queryClient = useQueryClient()
 
   const { data: appointments } = useQuery({
     queryKey: ["appointments", patient?.id],
@@ -335,6 +337,12 @@ export function MyAppointmentsPage() {
   })
   const { data: facilities } = useQuery({ queryKey: ["facilities"], queryFn: getFacilities })
   const { data: staff } = useQuery({ queryKey: ["staff"], queryFn: getStaff })
+
+  useRealtimeRefresh(
+    "appointments",
+    () => queryClient.invalidateQueries({ queryKey: ["appointments", patient?.id] }),
+    patient ? `patient_id=eq.${patient.id}` : undefined
+  )
 
   const todayStart = startOfDay(new Date())
   const tomorrowStart = new Date(todayStart)

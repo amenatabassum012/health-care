@@ -80,4 +80,14 @@ export const MOCK_STAFF: StaffUser[] = [
     nmcRegistrationNo: "UK-MCI-60219",
     verificationStatus: "Pending",
   },
+  {
+    id: "asha-001",
+    name: "Anitha",
+    phone: "9876543210",
+    email: "anitha@swasthyasetu.org",
+    role: "ASHA",
+    facilityId: "fac-phc-001",
+    nmcRegistrationNo: "N/A",
+    verificationStatus: "Verified",
+  },
 ]

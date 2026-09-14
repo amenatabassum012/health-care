@@ -1,16 +1,7 @@
 import { db } from "@/lib/db"
-import {
-  MOCK_APPOINTMENT,
-  MOCK_APPOINTMENTS,
-  MOCK_FOLLOW_UPS,
-  MOCK_HEALTH_RECORDS,
-  MOCK_PATIENT,
-  MOCK_REFERRALS,
-  MOCK_STOCK,
-} from "@/mocks/patients"
+import { MOCK_PATIENT } from "@/mocks/patients"
 import { computeTriageResult, type TriageOption } from "@/mocks/triage"
-import type { Appointment, DoctorFeedback, Patient, StockItem, TriageAnswer, TriageSession } from "@/types"
-import { networkDelay } from "./delay"
+import type { Appointment, DoctorFeedback, HealthRecordEntry, Patient, Referral, StockItem, TriageAnswer, TriageSession } from "@/types"
 import { supabase } from "@/lib/supabaseClient"
 
 // DEMO/TEST OTP NUMBERS — for SIH demo & dev only, do NOT ship to production.
@@ -26,7 +17,65 @@ const TEST_OTP_NUMBERS: Record<string, string> = {
   "+919777777777": "123456",
 }
 
-export async function requestOtp(phone: string) {
+function mapAppointment(row: any): Appointment {
+  return {
+    id: row.id,
+    patientId: row.patient_id,
+    facilityId: row.facility_id,
+    doctorId: row.doctor_id ?? undefined,
+    type: row.type,
+    slotTime: row.slot_time,
+    queuePosition: row.queue_position ?? undefined,
+    estimatedWaitMinutes: row.estimated_wait_minutes ?? undefined,
+    status: row.status,
+    bookedForName: row.booked_for_name ?? undefined,
+    bookedForRelation: row.booked_for_relation ?? undefined,
+    cancellationReason: row.cancellation_reason ?? undefined,
+  }
+}
+
+function mapReferral(row: any): Referral {
+  return {
+    id: row.id,
+    patientId: row.patient_id,
+    patientName: row.patient_name,
+    fromFacilityId: row.from_facility_id,
+    fromDoctorId: row.from_doctor_id ?? undefined,
+    toFacilityId: row.to_facility_id,
+    toDoctorId: row.to_doctor_id ?? undefined,
+    specialtyId: row.specialty_id,
+    urgency: row.urgency,
+    structuredSummary: row.structured_summary,
+    status: row.status,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  }
+}
+
+function mapHealthRecord(row: any): HealthRecordEntry {
+  return {
+    id: row.id,
+    patientId: row.patient_id,
+    facilityId: row.facility_id,
+    facilityName: row.facility_name,
+    type: row.type,
+    title: row.title,
+    summary: row.summary,
+    date: row.date,
+  }
+}
+
+// Normalizes whatever the login form passes in (raw 10-digit number or
+// already-prefixed) to the "+91XXXXXXXXXX" form TEST_OTP_NUMBERS and stored
+// phone numbers use, so demo numbers actually match.
+function normalizePhone(phone: string): string {
+  const digits = phone.replace(/\D/g, "")
+  if (phone.trim().startsWith("+")) return phone.trim()
+  return `+91${digits.slice(-10)}`
+}
+
+export async function requestOtp(phoneInput: string) {
+  const phone = normalizePhone(phoneInput)
   const testCode = TEST_OTP_NUMBERS[phone]
   if (testCode) {
     console.log(`[TEST OTP] Using fixed demo code for ${phone}: ${testCode}`)
@@ -47,11 +96,61 @@ export async function requestOtp(phone: string) {
   return { phone, requestId: `otp-${Date.now()}`, demoCode: code }
 }
 
-export async function verifyOtp(phone: string, code: string): Promise<Patient> {
+async function upsertPatientForPhone(phone: string, base: Patient): Promise<Patient> {
+  const { data: existing } = await supabase
+    .from('patients')
+    .select('*')
+    .eq('phone', phone)
+    .maybeSingle()
+
+  if (existing) {
+    return {
+      id: existing.id,
+      name: existing.name,
+      phone: existing.phone,
+      dob: existing.dob ?? undefined,
+      gender: existing.gender ?? undefined,
+      preferredLanguage: existing.preferred_language ?? base.preferredLanguage,
+      isGuardianManaged: existing.is_guardian_managed ?? false,
+      abhaId: existing.abha_id ?? undefined,
+    }
+  }
+
+  const { data, error } = await supabase
+    .from('patients')
+    .insert({
+      id: base.id,
+      name: base.name,
+      phone,
+      dob: base.dob ?? null,
+      gender: base.gender ?? null,
+      preferred_language: base.preferredLanguage,
+      is_guardian_managed: base.isGuardianManaged,
+      status: 'Active',
+    })
+    .select()
+    .single()
+
+  if (error) throw error
+
+  return {
+    id: data.id,
+    name: data.name,
+    phone: data.phone,
+    dob: data.dob ?? undefined,
+    gender: data.gender ?? undefined,
+    preferredLanguage: data.preferred_language ?? base.preferredLanguage,
+    isGuardianManaged: data.is_guardian_managed ?? false,
+    abhaId: data.abha_id ?? undefined,
+  }
+}
+
+export async function verifyOtp(phoneInput: string, code: string): Promise<Patient> {
+  const phone = normalizePhone(phoneInput)
   const testCode = TEST_OTP_NUMBERS[phone]
   if (testCode) {
     if (code !== testCode) throw new Error('Invalid or expired OTP')
-    return { ...MOCK_PATIENT, phone }
+    return upsertPatientForPhone(phone, { ...MOCK_PATIENT, id: `pat-${phone}`, phone })
   }
 
   const { data, error } = await supabase
@@ -69,20 +168,37 @@ export async function verifyOtp(phone: string, code: string): Promise<Patient> {
 
   await supabase.from('otp_codes').update({ verified: true }).eq('id', data.id)
 
-  return { ...MOCK_PATIENT, phone }
+  return upsertPatientForPhone(phone, { ...MOCK_PATIENT, id: `pat-${phone}`, phone })
 }
 
-export async function getHomeSummary() {
-  await networkDelay(400)
+export async function getHomeSummary(patientId: string) {
+  const [{ data: appointments }, { data: referrals }] = await Promise.all([
+    supabase
+      .from("appointments")
+      .select("*")
+      .eq("patient_id", patientId)
+      .in("status", ["Booked", "InQueue", "InProgress"])
+      .order("slot_time", { ascending: true })
+      .limit(1),
+    supabase
+      .from("referrals")
+      .select("*")
+      .eq("patient_id", patientId)
+      .neq("status", "Completed")
+      .order("created_at", { ascending: false })
+      .limit(1),
+  ])
+
   return {
-    activeAppointment: MOCK_APPOINTMENT,
-    latestReferral: MOCK_REFERRALS.find((r) => r.status !== "Completed"),
-    dueFollowUp: MOCK_FOLLOW_UPS.find((f) => f.status === "Pending"),
+    activeAppointment: appointments?.[0] ? mapAppointment(appointments[0]) : undefined,
+    latestReferral: referrals?.[0] ? mapReferral(referrals[0]) : undefined,
+    dueFollowUp: undefined,
   }
 }
 
+// Triage sessions stay local-first (Dexie) until a background sync layer
+// exists — see Architecture Specification §6.
 export async function submitTriage(patientId: string, answers: TriageAnswer[]): Promise<TriageSession> {
-  await networkDelay(700)
   const result = computeTriageResult(answers)
   const session: TriageSession = {
     id: `triage-${Date.now()}`,
@@ -92,8 +208,6 @@ export async function submitTriage(patientId: string, answers: TriageAnswer[]): 
     reason: result.reasonKey,
     createdAt: new Date().toISOString(),
   }
-  // Written to the local-first cache immediately so it is available offline —
-  // see Architecture Specification §6 and .cursorrules §6.
   await db.triageSessions.put(session)
   return session
 }
@@ -109,43 +223,49 @@ export async function createAppointment(
   doctorId?: string,
   bookedFor?: { name: string; relation: Appointment["bookedForRelation"] }
 ): Promise<Appointment> {
-  await networkDelay(700)
-  const appointment: Appointment = {
-    id: `appt-${Date.now()}`,
-    patientId,
-    facilityId,
-    doctorId,
-    type,
-    slotTime: new Date(Date.now() + 45 * 60 * 1000).toISOString(),
-    queuePosition: Math.floor(Math.random() * 6) + 2,
-    estimatedWaitMinutes: Math.floor(Math.random() * 40) + 10,
-    status: "InQueue",
-    bookedForName: bookedFor?.name,
-    bookedForRelation: bookedFor?.relation,
-  }
-  await db.appointments.put(appointment)
-  return appointment
+  const { data, error } = await supabase
+    .from("appointments")
+    .insert({
+      id: `appt-${Date.now()}`,
+      patient_id: patientId,
+      facility_id: facilityId,
+      doctor_id: doctorId ?? null,
+      type,
+      slot_time: new Date(Date.now() + 45 * 60 * 1000).toISOString(),
+      queue_position: Math.floor(Math.random() * 6) + 2,
+      estimated_wait_minutes: Math.floor(Math.random() * 40) + 10,
+      status: "InQueue",
+      booked_for_name: bookedFor?.name ?? null,
+      booked_for_relation: bookedFor?.relation ?? null,
+    })
+    .select()
+    .single()
+
+  if (error) throw error
+  return mapAppointment(data)
 }
 
 export async function getAppointments(patientId: string) {
-  await networkDelay(400)
-  const appointments = MOCK_APPOINTMENTS.filter((a) => a.patientId === patientId)
-  await db.appointments.bulkPut(appointments)
-  return appointments
-}
+  const { data, error } = await supabase
+    .from("appointments")
+    .select("*")
+    .eq("patient_id", patientId)
+    .order("slot_time", { ascending: false })
 
-export async function getCachedAppointments(patientId: string) {
-  return db.appointments.where("patientId").equals(patientId).sortBy("slotTime")
+  if (error) throw error
+  return (data ?? []).map(mapAppointment)
 }
 
 export async function cancelAppointment(appointmentId: string, reason: string): Promise<Appointment> {
-  await networkDelay(400)
-  const appointment = await db.appointments.get(appointmentId)
-  if (!appointment) throw new Error("Appointment not found")
+  const { data, error } = await supabase
+    .from("appointments")
+    .update({ status: "Cancelled", cancellation_reason: reason })
+    .eq("id", appointmentId)
+    .select()
+    .single()
 
-  const updated: Appointment = { ...appointment, status: "Cancelled", cancellationReason: reason }
-  await db.appointments.put(updated)
-  return updated
+  if (error) throw error
+  return mapAppointment(data)
 }
 
 export async function submitFeedback(
@@ -155,63 +275,114 @@ export async function submitFeedback(
   rating: number,
   comment?: string
 ): Promise<DoctorFeedback> {
-  await networkDelay(500)
-  const feedback: DoctorFeedback = {
-    id: `fb-${Date.now()}`,
-    appointmentId,
-    doctorId,
-    patientId,
-    rating,
-    comment,
-    createdAt: new Date().toISOString(),
+  const { data, error } = await supabase
+    .from("feedback")
+    .insert({
+      id: `fb-${Date.now()}`,
+      appointment_id: appointmentId,
+      doctor_id: doctorId,
+      patient_id: patientId,
+      rating,
+      comment: comment ?? null,
+    })
+    .select()
+    .single()
+
+  if (error) throw error
+  return {
+    id: data.id,
+    appointmentId: data.appointment_id,
+    doctorId: data.doctor_id,
+    patientId: data.patient_id,
+    rating: data.rating,
+    comment: data.comment ?? undefined,
+    createdAt: data.created_at,
   }
-  await db.feedback.put(feedback)
-  return feedback
 }
 
 export async function getFeedbackForAppointment(appointmentId: string) {
-  const feedback = await db.feedback.where("appointmentId").equals(appointmentId).first()
-  return feedback ?? null
+  const { data, error } = await supabase
+    .from("feedback")
+    .select("*")
+    .eq("appointment_id", appointmentId)
+    .maybeSingle()
+
+  if (error) throw error
+  if (!data) return null
+  return {
+    id: data.id,
+    appointmentId: data.appointment_id,
+    doctorId: data.doctor_id,
+    patientId: data.patient_id,
+    rating: data.rating,
+    comment: data.comment ?? undefined,
+    createdAt: data.created_at,
+  }
 }
 
 export async function getHealthRecords(patientId: string) {
-  await networkDelay(400)
-  const records = MOCK_HEALTH_RECORDS.filter((r) => r.patientId === patientId)
-  await db.healthRecords.bulkPut(records)
-  return records
-}
+  const { data, error } = await supabase
+    .from("health_records")
+    .select("*")
+    .eq("patient_id", patientId)
+    .order("date", { ascending: false })
 
-export async function getCachedHealthRecords(patientId: string) {
-  return db.healthRecords.where("patientId").equals(patientId).reverse().sortBy("date")
+  if (error) throw error
+  return (data ?? []).map(mapHealthRecord)
 }
 
 export async function getReferrals(patientId: string) {
-  await networkDelay(400)
-  const referrals = MOCK_REFERRALS.filter((r) => r.patientId === patientId)
-  await db.referrals.bulkPut(referrals)
-  return referrals
+  const { data, error } = await supabase
+    .from("referrals")
+    .select("*")
+    .eq("patient_id", patientId)
+    .order("created_at", { ascending: false })
+
+  if (error) throw error
+  return (data ?? []).map(mapReferral)
 }
 
 export async function searchStock(facilityId: string, query: string): Promise<StockItem[]> {
-  await networkDelay(350)
-  const q = query.trim().toLowerCase()
-  return MOCK_STOCK.filter(
-    (s) => s.facilityId === facilityId && (!q || s.name.toLowerCase().includes(q))
-  )
+  const q = query.trim()
+  let request = supabase.from("stock_items").select("*").eq("facility_id", facilityId)
+  if (q) request = request.ilike("name", `%${q}%`)
+  const { data, error } = await request
+
+  if (error) throw error
+  return (data ?? []).map((s: any) => ({
+    id: s.id,
+    facilityId: s.facility_id,
+    name: s.name,
+    category: s.category,
+    status: s.status,
+    updatedAt: s.updated_at,
+  }))
 }
 
 export async function findNearestAvailable(itemName: string, excludeFacilityId: string) {
-  await networkDelay(350)
-  return MOCK_STOCK.find(
-    (s) =>
-      s.name.toLowerCase() === itemName.toLowerCase() &&
-      s.facilityId !== excludeFacilityId &&
-      s.status === "Available"
-  )
+  const { data, error } = await supabase
+    .from("stock_items")
+    .select("*")
+    .ilike("name", itemName)
+    .neq("facility_id", excludeFacilityId)
+    .eq("status", "Available")
+    .limit(1)
+    .maybeSingle()
+
+  if (error) throw error
+  if (!data) return undefined
+  return {
+    id: data.id,
+    facilityId: data.facility_id,
+    name: data.name,
+    category: data.category,
+    status: data.status,
+    updatedAt: data.updated_at,
+  } as StockItem
 }
 
+// No real dispatch system exists yet, so SOS routing stays a fixed demo response.
 export async function triggerEmergencySos(_patientId: string) {
-  await networkDelay(900)
   return {
     routedFacilityName: "District Hospital Haridwar",
     etaMinutes: 12,

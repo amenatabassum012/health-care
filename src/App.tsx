@@ -10,8 +10,10 @@ import { Loader2 } from "lucide-react";
 
 import { PatientLayout } from "@/components/layout/PatientLayout";
 import { DoctorLayout } from "@/components/layout/DoctorLayout";
+import { ASHALayout } from "@/components/layout/ASHALayout";
 
 import {
+  RequireASHA,
   RequireFacilityAdmin,
   RequirePatient,
   RequireStaff,
@@ -169,6 +171,12 @@ const ShopInventoryPage = lazy(() =>
 /* =========================================================
    ASHA
 ========================================================= */
+
+const ASHALoginPage = lazy(() =>
+  import("@/pages/asha/ASHALoginPage").then((m) => ({
+    default: m.default,
+  })),
+);
 
 const ASHADashboard = lazy(() =>
   import("@/pages/asha/ASHADashboard").then((m) => ({
@@ -409,39 +417,52 @@ export function App() {
           ================================================= */}
 
           <Route
-            path="/asha"
-            element={<ASHADashboard />}
+            path="/asha/login"
+            element={<ASHALoginPage />}
           />
 
-          <Route
-            path="/asha/patients"
-            element={<ASHAPatients />}
-          />
+          <Route element={<RequireASHA />}>
 
-          <Route
-            path="/asha/followups"
-            element={<ASHAFollowups />}
-          />
+            <Route element={<ASHALayout />}>
 
-          <Route
-            path="/asha/referrals"
-            element={<ASHAReferrals />}
-          />
+              <Route
+                path="/asha"
+                element={<ASHADashboard />}
+              />
 
-          <Route
-            path="/asha/high-risk"
-            element={<ASHAHighRisk />}
-          />
+              <Route
+                path="/asha/patients"
+                element={<ASHAPatients />}
+              />
 
-          <Route
-            path="/asha/register"
-            element={<ASHARegisterPatient />}
-          />
+              <Route
+                path="/asha/followups"
+                element={<ASHAFollowups />}
+              />
 
-          <Route
-            path="/asha/profile"
-            element={<ASHAProfile />}
-          />
+              <Route
+                path="/asha/referrals"
+                element={<ASHAReferrals />}
+              />
+
+              <Route
+                path="/asha/high-risk"
+                element={<ASHAHighRisk />}
+              />
+
+              <Route
+                path="/asha/register"
+                element={<ASHARegisterPatient />}
+              />
+
+              <Route
+                path="/asha/profile"
+                element={<ASHAProfile />}
+              />
+
+            </Route>
+
+          </Route>
 
           {/* =================================================
              LOCATION TEST

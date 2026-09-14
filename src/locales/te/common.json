@@ -324,6 +324,11 @@
       "queueEmpty": "ప్రస్తుతం క్యూలో రోగులు లేరు",
       "referralInboxEmpty": "పెండింగ్‌లో రిఫరల్స్ లేవు"
     },
+    "emergencyAlert": {
+      "title": "{{name}} నుండి అత్యవసర SOS",
+      "toast": "{{name}} నుండి అత్యవసర SOS",
+      "acknowledge": "అంగీకరించండి"
+    },
     "consultation": {
       "title": "సంప్రదింపు",
       "diagnosis": "నిర్మాణాత్మక నిర్ధారణ",

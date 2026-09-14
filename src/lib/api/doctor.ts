@@ -1,10 +1,3 @@
-import { db } from "@/lib/db";
-import {
-  MOCK_APPOINTMENT,
-  MOCK_APPOINTMENTS,
-  MOCK_PATIENT_DIRECTORY,
-  MOCK_REFERRALS,
-} from "@/mocks/patients";
 import { MOCK_STAFF } from "@/mocks/staff";
 import type {
   Appointment,
@@ -13,9 +6,64 @@ import type {
   ReferralUrgency,
   StaffRole,
   StaffUser,
+  TriageUrgency,
 } from "@/types";
-import { networkDelay } from "./delay";
 import { supabase } from "@/lib/supabaseClient";
+
+function mapAppointment(row: any): Appointment {
+  return {
+    id: row.id,
+    patientId: row.patient_id,
+    facilityId: row.facility_id,
+    doctorId: row.doctor_id ?? undefined,
+    type: row.type,
+    slotTime: row.slot_time,
+    queuePosition: row.queue_position ?? undefined,
+    estimatedWaitMinutes: row.estimated_wait_minutes ?? undefined,
+    status: row.status,
+    bookedForName: row.booked_for_name ?? undefined,
+    bookedForRelation: row.booked_for_relation ?? undefined,
+    cancellationReason: row.cancellation_reason ?? undefined,
+  };
+}
+
+function mapReferral(row: any): Referral {
+  return {
+    id: row.id,
+    patientId: row.patient_id,
+    patientName: row.patient_name,
+    fromFacilityId: row.from_facility_id,
+    fromDoctorId: row.from_doctor_id ?? undefined,
+    toFacilityId: row.to_facility_id,
+    toDoctorId: row.to_doctor_id ?? undefined,
+    specialtyId: row.specialty_id,
+    urgency: row.urgency,
+    structuredSummary: row.structured_summary,
+    status: row.status,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
+function mapStaff(row: any): StaffUser {
+  return {
+    id: row.id,
+    name: row.name,
+    phone: row.phone,
+    email: row.email,
+    role: row.role,
+    specialtyId: row.specialty_id ?? undefined,
+    facilityId: row.facility_id,
+    nmcRegistrationNo: row.nmc_registration_no,
+    credentialFileName: row.credential_file_name ?? undefined,
+    qualifications: row.qualifications ?? undefined,
+    verificationStatus: row.verification_status,
+    consultationFeeInr: row.consultation_fee_inr ?? undefined,
+    availability: row.availability ?? undefined,
+    rating: row.rating ?? undefined,
+    ratingCount: row.rating_count ?? undefined,
+  } as StaffUser;
+}
 
 /* =========================================================
    STAFF REGISTRATION
@@ -70,18 +118,7 @@ export async function registerStaff(
     throw error;
   }
 
-  return {
-    id: data.id,
-    name: data.name,
-    phone: data.phone,
-    email: data.email,
-    role: data.role,
-    facilityId: data.facility_id,
-    specialtyId: data.specialty_id,
-    nmcRegistrationNo: data.nmc_registration_no,
-    credentialFileName: data.credential_file_name,
-    verificationStatus: data.verification_status,
-  } as StaffUser;
+  return mapStaff(data);
 }
 
 /* =========================================================
@@ -114,18 +151,7 @@ export async function loginStaff(
     throw new Error("Staff not found. Please register first.");
   }
 
-  return {
-    id: data.id,
-    name: data.name,
-    phone: data.phone,
-    email: data.email,
-    role: data.role,
-    facilityId: data.facility_id,
-    specialtyId: data.specialty_id,
-    nmcRegistrationNo: data.nmc_registration_no,
-    credentialFileName: data.credential_file_name,
-    verificationStatus: data.verification_status,
-  } as StaffUser;
+  return mapStaff(data);
 }
 
 /* =========================================================
@@ -145,21 +171,7 @@ export async function getPendingStaff(
     throw error;
   }
 
-  return (data ?? []).map(
-    (s) =>
-      ({
-        id: s.id,
-        name: s.name,
-        phone: s.phone,
-        email: s.email,
-        role: s.role,
-        facilityId: s.facility_id,
-        specialtyId: s.specialty_id,
-        nmcRegistrationNo: s.nmc_registration_no,
-        credentialFileName: s.credential_file_name,
-        verificationStatus: s.verification_status,
-      }) as StaffUser,
-  );
+  return (data ?? []).map(mapStaff);
 }
 
 /* =========================================================
@@ -182,18 +194,7 @@ export async function approveStaff(
     throw error;
   }
 
-  return {
-    id: data.id,
-    name: data.name,
-    phone: data.phone,
-    email: data.email,
-    role: data.role,
-    facilityId: data.facility_id,
-    specialtyId: data.specialty_id,
-    nmcRegistrationNo: data.nmc_registration_no,
-    credentialFileName: data.credential_file_name,
-    verificationStatus: data.verification_status,
-  } as StaffUser;
+  return mapStaff(data);
 }
 
 /* =========================================================
@@ -217,88 +218,46 @@ export async function rejectStaff(
     throw error;
   }
 
-  return {
-    id: data.id,
-    name: data.name,
-    phone: data.phone,
-    email: data.email,
-    role: data.role,
-    facilityId: data.facility_id,
-    specialtyId: data.specialty_id,
-    nmcRegistrationNo: data.nmc_registration_no,
-    credentialFileName: data.credential_file_name,
-    verificationStatus: data.verification_status,
-  } as StaffUser;
+  return mapStaff(data);
 }
 
 /* =========================================================
    DOCTOR QUEUE
    ========================================================= */
 
-export async function getDoctorQueue(_facilityId: string) {
-  await networkDelay(400);
+export async function getDoctorQueue(facilityId: string) {
+  const { data, error } = await supabase
+    .from("appointments")
+    .select("*, patients(name)")
+    .eq("facility_id", facilityId)
+    .in("status", ["InQueue", "InProgress"])
+    .order("queue_position", { ascending: true });
 
-  return [
-    {
-      ...MOCK_APPOINTMENT,
-      patientName: "Suman Devi",
-      urgency: "InPerson" as const,
-    },
-    {
-      ...MOCK_APPOINTMENT,
-      id: "appt-002",
-      patientId: "pat-002",
-      patientName: "Deepak Kumar",
-      queuePosition: 1,
-      type: "Teleconsult" as const,
-      urgency: "Teleconsult" as const,
-      status: "InProgress" as const,
-    },
-    {
-      ...MOCK_APPOINTMENT,
-      id: "appt-003",
-      patientId: "pat-003",
-      patientName: "Baby of Kavita",
-      queuePosition: 2,
-      urgency: "Emergency" as const,
-    },
-  ];
+  if (error) throw error;
+
+  return (data ?? []).map((row: any) => ({
+    ...mapAppointment(row),
+    patientName: row.patients?.name ?? row.patient_id,
+    urgency: (row.status === "InProgress" ? "Teleconsult" : "InPerson") as TriageUrgency,
+  }));
 }
 
 /* =========================================================
    COMPLETE CONSULTATION
    ========================================================= */
 
-/**
- * Marks the consultation done.
- *
- * This allows the patient to rate the visit and moves
- * the appointment to Completed in the shared mock store
- * and the offline cache.
- */
 export async function completeConsultation(
   appointment: Appointment,
 ): Promise<Appointment> {
-  await networkDelay(500);
+  const { data, error } = await supabase
+    .from("appointments")
+    .update({ status: "Completed" })
+    .eq("id", appointment.id)
+    .select()
+    .single();
 
-  const completed: Appointment = {
-    ...appointment,
-    status: "Completed",
-  };
-
-  const idx = MOCK_APPOINTMENTS.findIndex(
-    (a) => a.id === completed.id,
-  );
-
-  if (idx >= 0) {
-    MOCK_APPOINTMENTS[idx] = completed;
-  } else {
-    MOCK_APPOINTMENTS.push(completed);
-  }
-
-  await db.appointments.put(completed);
-
-  return completed;
+  if (error) throw error;
+  return mapAppointment(data);
 }
 
 /* =========================================================
@@ -308,11 +267,14 @@ export async function completeConsultation(
 export async function getReferralInbox(
   facilityId: string,
 ) {
-  await networkDelay(400);
+  const { data, error } = await supabase
+    .from("referrals")
+    .select("*")
+    .eq("to_facility_id", facilityId)
+    .order("created_at", { ascending: false });
 
-  return MOCK_REFERRALS.filter(
-    (r) => r.toFacilityId === facilityId,
-  );
+  if (error) throw error;
+  return (data ?? []).map(mapReferral);
 }
 
 /* =========================================================
@@ -331,15 +293,13 @@ export interface AddQualificationInput {
 export async function addQualification(
   input: AddQualificationInput,
 ): Promise<StaffUser> {
-  await networkDelay(600);
+  const { data: current, error: fetchError } = await supabase
+    .from("staff")
+    .select("qualifications")
+    .eq("id", input.staffId)
+    .single();
 
-  const staffMember = MOCK_STAFF.find(
-    (s) => s.id === input.staffId,
-  );
-
-  if (!staffMember) {
-    throw new Error("Staff not found");
-  }
+  if (fetchError) throw fetchError;
 
   const qualification: Qualification = {
     id: input.id ?? `qual-${Date.now()}`,
@@ -349,12 +309,17 @@ export async function addQualification(
     fileName: input.fileName,
   };
 
-  staffMember.qualifications = [
-    ...(staffMember.qualifications ?? []),
-    qualification,
-  ];
+  const qualifications = [...(current?.qualifications ?? []), qualification];
 
-  return staffMember;
+  const { data, error } = await supabase
+    .from("staff")
+    .update({ qualifications })
+    .eq("id", input.staffId)
+    .select()
+    .single();
+
+  if (error) throw error;
+  return mapStaff(data);
 }
 
 /* =========================================================
@@ -364,19 +329,18 @@ export async function addQualification(
 export async function getDoctorAppointments(
   doctorId: string,
 ) {
-  await networkDelay(400);
+  const { data, error } = await supabase
+    .from("appointments")
+    .select("*, patients(name)")
+    .eq("doctor_id", doctorId)
+    .order("slot_time", { ascending: false });
 
-  const appointments = MOCK_APPOINTMENTS
-    .filter((a) => a.doctorId === doctorId)
-    .map((a) => ({
-      ...a,
-      patientName:
-        MOCK_PATIENT_DIRECTORY[a.patientId] ?? a.patientId,
-    }));
+  if (error) throw error;
 
-  await db.appointments.bulkPut(appointments);
-
-  return appointments;
+  return (data ?? []).map((row: any) => ({
+    ...mapAppointment(row),
+    patientName: row.patients?.name ?? row.patient_id,
+  }));
 }
 
 /* =========================================================
@@ -398,23 +362,26 @@ export interface CreateReferralInput {
 export async function createReferral(
   input: CreateReferralInput,
 ): Promise<Referral> {
-  await networkDelay(700);
+  const { data, error } = await supabase
+    .from("referrals")
+    .insert({
+      id: `ref-${Date.now()}`,
+      patient_id: input.patientId,
+      patient_name: input.patientName,
+      from_facility_id: input.fromFacilityId,
+      from_doctor_id: input.fromDoctorId,
+      to_facility_id: input.toFacilityId,
+      to_doctor_id: input.toDoctorId ?? null,
+      specialty_id: input.specialtyId,
+      urgency: input.urgency,
+      structured_summary: input.structuredSummary,
+      status: "Pending",
+    })
+    .select()
+    .single();
 
-  const now = new Date().toISOString();
-
-  const referral: Referral = {
-    id: `ref-${Date.now()}`,
-    status: "Pending",
-    createdAt: now,
-    updatedAt: now,
-    ...input,
-  };
-
-  MOCK_REFERRALS.push(referral);
-
-  await db.referrals.put(referral);
-
-  return referral;
+  if (error) throw error;
+  return mapReferral(data);
 }
 
 /* =========================================================
@@ -424,11 +391,14 @@ export async function createReferral(
 export async function getReferralsMadeByDoctor(
   doctorId: string,
 ) {
-  await networkDelay(400);
+  const { data, error } = await supabase
+    .from("referrals")
+    .select("*")
+    .eq("from_doctor_id", doctorId)
+    .order("created_at", { ascending: false });
 
-  return MOCK_REFERRALS.filter(
-    (r) => r.fromDoctorId === doctorId,
-  );
+  if (error) throw error;
+  return (data ?? []).map(mapReferral);
 }
 
 /* =========================================================
@@ -438,13 +408,48 @@ export async function getReferralsMadeByDoctor(
 export async function getFacilityMetrics(
   facilityId: string,
 ) {
-  await networkDelay(500);
+  const startOfDay = new Date();
+  startOfDay.setHours(0, 0, 0, 0);
+
+  const [{ data: todayAppointments }, { data: referrals }, { data: stock }] = await Promise.all([
+    supabase
+      .from("appointments")
+      .select("estimated_wait_minutes, status")
+      .eq("facility_id", facilityId)
+      .gte("slot_time", startOfDay.toISOString()),
+    supabase
+      .from("referrals")
+      .select("status")
+      .or(`from_facility_id.eq.${facilityId},to_facility_id.eq.${facilityId}`),
+    supabase
+      .from("stock_items")
+      .select("status")
+      .eq("facility_id", facilityId),
+  ]);
+
+  const patientLoadToday = todayAppointments?.length ?? 0;
+  const waits = (todayAppointments ?? [])
+    .map((a) => a.estimated_wait_minutes)
+    .filter((n): n is number => typeof n === "number");
+  const avgWaitMinutes = waits.length
+    ? Math.round(waits.reduce((sum, n) => sum + n, 0) / waits.length)
+    : 0;
+
+  const completedReferrals = (referrals ?? []).filter((r) => r.status === "Completed").length;
+  const referralCompletionRate = referrals?.length
+    ? Math.round((completedReferrals / referrals.length) * 100) / 100
+    : 0;
+
+  const availableStock = (stock ?? []).filter((s) => s.status === "Available").length;
+  const stockAvailabilityRate = stock?.length
+    ? Math.round((availableStock / stock.length) * 100) / 100
+    : 0;
 
   return {
     facilityId,
-    patientLoadToday: 42,
-    referralCompletionRate: 0.81,
-    stockAvailabilityRate: 0.74,
-    avgWaitMinutes: 27,
+    patientLoadToday,
+    referralCompletionRate,
+    stockAvailabilityRate,
+    avgWaitMinutes,
   };
 }

@@ -49,7 +49,7 @@ export function ProfilePage() {
 
   const { data: staff } = useQuery({
     queryKey: ["staff-profile", sessionStaff?.id],
-    queryFn: () => getStaffById(sessionStaff!.id),
+    queryFn: async () => (await getStaffById(sessionStaff!.id)) ?? sessionStaff!,
     enabled: !!sessionStaff,
     initialData: sessionStaff,
   })

@@ -4,6 +4,7 @@ import { useMutation } from "@tanstack/react-query"
 import { MessageSquareWarning, PhoneCall, Siren } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { triggerEmergencySos } from "@/lib/api/patient"
+import { pushEmergencyAlert } from "@/lib/emergencyAlerts"
 import { useSession } from "@/state/session"
 
 export function SosPage() {
@@ -13,7 +14,14 @@ export function SosPage() {
 
   const mutation = useMutation({
     mutationFn: () => triggerEmergencySos(patient!.id),
-    onSuccess: () => setConfirmed(true),
+    onSuccess: (data) => {
+      setConfirmed(true)
+      pushEmergencyAlert({
+        patientId: patient!.id,
+        patientName: patient!.name,
+        facilityName: data.routedFacilityName,
+      })
+    },
   })
 
   return (

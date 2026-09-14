@@ -25,3 +25,11 @@ export function RequireFacilityAdmin() {
   }
   return <Outlet />
 }
+
+export function RequireASHA() {
+  const { staff } = useSession()
+  if (!staff || staff.verificationStatus !== "Verified" || staff.role !== "ASHA") {
+    return <Navigate to="/asha/login" replace />
+  }
+  return <Outlet />
+}

@@ -324,6 +324,11 @@
       "queueEmpty": "No patients in queue right now",
       "referralInboxEmpty": "No referrals waiting"
     },
+    "emergencyAlert": {
+      "title": "Emergency SOS from {{name}}",
+      "toast": "Emergency SOS from {{name}}",
+      "acknowledge": "Acknowledge"
+    },
     "consultation": {
       "title": "Consultation",
       "diagnosis": "Structured diagnosis",

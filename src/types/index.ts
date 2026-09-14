@@ -11,7 +11,7 @@ export interface Facility {
   longitude?: number
 }
 
-export type StaffRole = "Doctor" | "Specialist" | "CHO" | "FacilityAdmin"
+export type StaffRole = "Doctor" | "Specialist" | "CHO" | "FacilityAdmin" | "ASHA"
 
 export type VerificationStatus = "Pending" | "Verified" | "Rejected"
 

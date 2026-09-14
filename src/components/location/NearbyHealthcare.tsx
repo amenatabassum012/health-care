@@ -92,6 +92,7 @@ export default function NearbyHealthcare({
     accuracy,
     loading,
     error,
+    startLocationSharing,
   } = useUserLocation(
     userId,
     role
@@ -267,7 +268,7 @@ export default function NearbyHealthcare({
 
           <AlertCircle className="size-5 shrink-0" />
 
-          <div>
+          <div className="flex-1">
 
             <p className="font-semibold">
               Location unavailable
@@ -275,6 +276,18 @@ export default function NearbyHealthcare({
 
             <p>
               {error}
+            </p>
+
+            <button
+              type="button"
+              onClick={() => startLocationSharing()}
+              className="mt-3 inline-flex items-center gap-2 rounded-lg bg-red-700 px-3 py-2 text-xs font-semibold text-white hover:bg-red-800"
+            >
+              Allow location access
+            </button>
+
+            <p className="mt-2 text-xs text-red-700/80">
+              If nothing happens, click the location icon in your browser's address bar, choose "Allow", then try again.
             </p>
 
           </div>

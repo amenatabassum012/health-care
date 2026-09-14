@@ -17,9 +17,8 @@ import {
 } from "@/components/ui/select"
 import { StatusBadge, type StatusTone } from "@/components/shared/StatusBadge"
 import { getFacilities, getSpecialties, getStaff } from "@/lib/api/shared"
-import { searchStock } from "@/lib/api/patient"
+import { getHealthRecords, searchStock } from "@/lib/api/patient"
 import { completeConsultation, createReferral, getDoctorQueue } from "@/lib/api/doctor"
-import { MOCK_HEALTH_RECORDS } from "@/mocks/patients"
 import { useSession } from "@/state/session"
 import type { PrescriptionItem, ReferralUrgency } from "@/types"
 
@@ -65,6 +64,12 @@ export function ConsultationPage() {
 
   const currentPatient = queue?.find((a) => a.id === appointmentId)
 
+  const { data: patientHistory = [] } = useQuery({
+    queryKey: ["health-records", currentPatient?.patientId],
+    queryFn: () => getHealthRecords(currentPatient!.patientId),
+    enabled: !!currentPatient,
+  })
+
   const completeMutation = useMutation({
     mutationFn: () => completeConsultation(currentPatient!),
     onSuccess: () => {
@@ -96,8 +101,6 @@ export function ConsultationPage() {
   const filteredDiagnoses = commonDiagnoses.filter(
     (d) => d.toLowerCase().includes(diagnosisQuery.toLowerCase()) && !diagnoses.includes(d)
   )
-
-  const patientHistory = MOCK_HEALTH_RECORDS
 
   function addPrescriptionRow() {
     setPrescription((p) => [...p, { medicine: "", dosage: "", durationDays: 5 }])
