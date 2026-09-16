@@ -3,6 +3,7 @@ import {
   AlertTriangle,
   BadgeCheck,
   ClipboardList,
+  HeartHandshake,
   Hospital,
   LayoutDashboard,
   LogOut,
@@ -18,6 +19,7 @@ import { useSession } from "@/state/session"
 const NAV_ITEMS = [
   { to: "/asha", icon: LayoutDashboard, label: "Dashboard" },
   { to: "/asha/patients", icon: Users, label: "My Patients" },
+  { to: "/asha/requests", icon: HeartHandshake, label: "Case Requests" },
   { to: "/asha/followups", icon: ClipboardList, label: "Follow-ups" },
   { to: "/asha/referrals", icon: Hospital, label: "Referrals" },
   { to: "/asha/high-risk", icon: AlertTriangle, label: "High-Risk Patients" },

@@ -28,7 +28,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { getSpecialties, searchFacilities } from "@/lib/api/shared"
-import { registerStaff } from "@/lib/api/doctor"
+import { registerStaff, verifyHpr } from "@/lib/api/doctor"
 import { saveCertificateFile } from "@/lib/certificateStore"
 import { facilityLabel } from "@/mocks/facilities"
 import type { StaffRole } from "@/types"
@@ -57,6 +57,7 @@ export function DoctorRegisterPage() {
   const [facilityName, setFacilityName] = useState("")
   const [specialtyId, setSpecialtyId] = useState<string | undefined>(undefined)
   const [nmcNumber, setNmcNumber] = useState("")
+  const [hprId, setHprId] = useState("")
   const [fileName, setFileName] = useState<string | null>(null)
   const [credentialFile, setCredentialFile] = useState<File | null>(null)
 
@@ -79,6 +80,11 @@ export function DoctorRegisterPage() {
         credentialFileName: fileName ?? undefined,
       })
       if (credentialFile) await saveCertificateFile(staff.id, credentialFile)
+      if (hprId.trim()) {
+        // Never blocks registration: verifyHpr always resolves, falling back to
+        // "unavailable" if ABDM credentials aren't configured or the call fails.
+        void verifyHpr(staff.id, hprId.trim())
+      }
       return staff
     },
     onError: (error: unknown) => {
@@ -261,6 +267,16 @@ export function DoctorRegisterPage() {
             <div className="space-y-2">
               <Label>{t("doctor.register.nmcNumber")}</Label>
               <Input value={nmcNumber} onChange={(e) => setNmcNumber(e.target.value)} className="h-11" />
+            </div>
+            <div className="space-y-2">
+              <Label>{t("doctor.register.hprId")}</Label>
+              <p className="text-xs text-muted-foreground">{t("doctor.register.hprIdHint")}</p>
+              <Input
+                value={hprId}
+                onChange={(e) => setHprId(e.target.value)}
+                placeholder="12-3456-7890-1234"
+                className="h-11"
+              />
             </div>
             <div className="space-y-2">
               <Label>{t("doctor.register.credentialUpload")}</Label>

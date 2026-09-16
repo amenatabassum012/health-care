@@ -31,6 +31,7 @@ function mapStaff(row: any): StaffUser {
     availability: row.availability ?? undefined,
     rating: row.rating ?? undefined,
     ratingCount: row.rating_count ?? undefined,
+    bio: row.bio ?? undefined,
   }
 }
 

@@ -15,9 +15,10 @@ import {
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
 import { StatusBadge, type StatusTone } from "@/components/shared/StatusBadge"
 import { CertificateViewButton } from "@/components/shared/CertificateViewButton"
-import { addQualification } from "@/lib/api/doctor"
+import { addQualification, updateStaffProfile } from "@/lib/api/doctor"
 import { getFacilities, getSpecialties, getStaffById } from "@/lib/api/shared"
 import { saveCertificateFile } from "@/lib/certificateStore"
 import { useSession } from "@/state/session"
@@ -55,6 +56,25 @@ export function ProfilePage() {
   })
   const { data: facilities } = useQuery({ queryKey: ["facilities"], queryFn: getFacilities })
   const { data: specialties } = useQuery({ queryKey: ["specialties"], queryFn: getSpecialties })
+
+  const [editingAbout, setEditingAbout] = useState(false)
+  const [bioDraft, setBioDraft] = useState("")
+  const [feeDraft, setFeeDraft] = useState("")
+  const [availabilityDraft, setAvailabilityDraft] = useState("")
+
+  const updateProfileMutation = useMutation({
+    mutationFn: () =>
+      updateStaffProfile(sessionStaff!.id, {
+        bio: bioDraft,
+        consultationFeeInr: feeDraft ? Number(feeDraft) : undefined,
+        availability: availabilityDraft,
+      }),
+    onSuccess: () => {
+      toast.success(t("common.save"))
+      qc.invalidateQueries({ queryKey: ["staff-profile", sessionStaff?.id] })
+      setEditingAbout(false)
+    },
+  })
 
   const addQualificationMutation = useMutation({
     mutationFn: addQualification,
@@ -115,6 +135,78 @@ export function ProfilePage() {
 
         {staff.verificationStatus === "Rejected" && staff.rejectionReason && (
           <p className="mt-3 rounded-lg bg-coral/10 px-3 py-2 text-sm text-coral">{staff.rejectionReason}</p>
+        )}
+      </div>
+
+      <div className="rounded-2xl border border-border bg-card p-5">
+        <div className="mb-3 flex items-center justify-between">
+          <h2 className="text-sm font-bold tracking-wide text-muted-foreground uppercase">
+            {t("doctor.profile.aboutYou")}
+          </h2>
+          {!editingAbout && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                setBioDraft(staff.bio ?? "")
+                setFeeDraft(staff.consultationFeeInr?.toString() ?? "")
+                setAvailabilityDraft(staff.availability ?? "")
+                setEditingAbout(true)
+              }}
+            >
+              {t("common.edit")}
+            </Button>
+          )}
+        </div>
+
+        {!editingAbout ? (
+          <div className="space-y-2 text-sm">
+            <p className="text-foreground">{staff.bio || t("doctor.profile.noBio")}</p>
+            <p className="text-muted-foreground">
+              {staff.consultationFeeInr !== undefined ? `₹${staff.consultationFeeInr}` : t("doctor.profile.noFee")}
+              {staff.availability ? ` · ${staff.availability}` : ""}
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            <div className="space-y-1.5">
+              <Label className="text-xs">{t("doctor.profile.bio")}</Label>
+              <Textarea value={bioDraft} onChange={(e) => setBioDraft(e.target.value)} rows={3} />
+            </div>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="space-y-1.5">
+                <Label className="text-xs">{t("doctor.profile.consultationFee")}</Label>
+                <Input
+                  type="number"
+                  value={feeDraft}
+                  onChange={(e) => setFeeDraft(e.target.value)}
+                  className="h-10"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs">{t("doctor.profile.availability")}</Label>
+                <Input
+                  value={availabilityDraft}
+                  onChange={(e) => setAvailabilityDraft(e.target.value)}
+                  className="h-10"
+                  placeholder="Mon–Sat, 10:00 AM – 4:00 PM"
+                />
+              </div>
+            </div>
+            <div className="flex gap-2 pt-1">
+              <Button variant="outline" size="sm" onClick={() => setEditingAbout(false)}>
+                {t("common.cancel")}
+              </Button>
+              <Button
+                size="sm"
+                className="bg-brand-blue text-white hover:bg-brand-blue/90"
+                disabled={updateProfileMutation.isPending}
+                onClick={() => updateProfileMutation.mutate()}
+              >
+                {updateProfileMutation.isPending ? t("common.loading") : t("common.save")}
+              </Button>
+            </div>
+          </div>
         )}
       </div>
 

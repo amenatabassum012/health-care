@@ -75,7 +75,6 @@ export function DoctorLayout() {
         ]
       : [
           { to: "/doctor/patients", icon: Users, label: t("doctor.patients.title") },
-          { to: "/doctor/consultation/appt-001", icon: ClipboardList, label: t("doctor.consultation.title") },
         ]),
     { to: "/doctor/profile", icon: BadgeCheck, label: t("doctor.profile.title") },
   ]

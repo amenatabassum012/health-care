@@ -22,10 +22,20 @@ const STATUS_TONE: Record<string, StatusTone> = {
   New: "info",
 }
 
+function resolveAge(age: number | null | undefined, dob: string | null | undefined): number | null {
+  if (typeof age === "number" && age > 0) return age
+  if (!dob) return null
+  const birth = new Date(dob)
+  if (Number.isNaN(birth.getTime())) return null
+  const diff = Date.now() - birth.getTime()
+  const computed = Math.floor(diff / (1000 * 60 * 60 * 24 * 365.25))
+  return computed > 0 ? computed : null
+}
+
 interface RecentPatient {
   id: string
   name: string
-  age: number
+  age: number | null
   village: string
   status: string
 }
@@ -85,7 +95,7 @@ export function ASHADashboard() {
       (recent ?? []).map((p) => ({
         id: p.id,
         name: p.name,
-        age: p.age ?? 0,
+        age: resolveAge(p.age, p.dob),
         village: p.village ?? "—",
         status: p.status ?? "New",
       }))
@@ -225,7 +235,7 @@ export function ASHADashboard() {
               <div>
                 <p className="text-sm font-semibold text-foreground">{patient.name}</p>
                 <p className="text-xs text-muted-foreground">
-                  {patient.age} yrs · {patient.village}
+                  {patient.age !== null ? `${patient.age} yrs` : "Age unknown"} · {patient.village}
                 </p>
               </div>
 

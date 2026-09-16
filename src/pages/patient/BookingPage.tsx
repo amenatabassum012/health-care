@@ -1,7 +1,7 @@
 import { useState } from "react"
 import { useTranslation } from "react-i18next"
 import { useMutation, useQuery } from "@tanstack/react-query"
-import { CalendarClock, Clock, ExternalLink, Hospital, MapPin, Star, Users, Video } from "lucide-react"
+import { CalendarClock, Clock, ExternalLink, HeartHandshake, Hospital, MapPin, Star, Users, Video } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -14,6 +14,12 @@ import type { AppointmentType, DependentRelation, Specialty, StaffUser } from "@
 import { cn } from "@/lib/utils"
 
 const RELATIONS: DependentRelation[] = ["Child", "Elder", "Other"]
+
+function getErrorMessage(error: unknown): string {
+  if (error instanceof Error) return error.message
+  if (error && typeof error === "object" && "message" in error) return String((error as { message: unknown }).message)
+  return String(error)
+}
 
 function DoctorOption({
   doc,
@@ -109,6 +115,7 @@ export function BookingPage() {
   const [doctorId, setDoctorId] = useState<string | null>(null)
   const [bookedForName, setBookedForName] = useState("")
   const [bookedForRelation, setBookedForRelation] = useState<DependentRelation>("Child")
+  const [wantsAsha, setWantsAsha] = useState(false)
 
   const { data: facilities } = useQuery({ queryKey: ["facilities"], queryFn: getFacilities })
   const { data: staff } = useQuery({ queryKey: ["staff"], queryFn: getStaff })
@@ -130,7 +137,8 @@ export function BookingPage() {
         doctorId ?? undefined,
         patient?.isGuardianManaged && bookedForName
           ? { name: bookedForName, relation: bookedForRelation }
-          : undefined
+          : undefined,
+        wantsAsha
       ),
   })
 
@@ -316,6 +324,39 @@ export function BookingPage() {
             ))}
           </div>
         </div>
+      )}
+
+      {facilityId && (
+        <button
+          type="button"
+          onClick={() => setWantsAsha((v) => !v)}
+          className={cn(
+            "flex w-full items-center gap-3 rounded-2xl border-2 p-4 text-left",
+            wantsAsha ? "border-teal bg-mint" : "border-border bg-card"
+          )}
+        >
+          <span className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-teal/15 text-teal-dark">
+            <HeartHandshake className="size-5" />
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="block text-sm font-semibold text-foreground">{t("patient.booking.wantsAsha")}</span>
+            <span className="block text-xs text-muted-foreground">{t("patient.booking.wantsAshaDesc")}</span>
+          </span>
+          <span
+            className={cn(
+              "flex h-6 w-11 shrink-0 items-center rounded-full p-0.5 transition-colors",
+              wantsAsha ? "bg-teal justify-end" : "bg-muted justify-start"
+            )}
+          >
+            <span className="size-5 rounded-full bg-white shadow" />
+          </span>
+        </button>
+      )}
+
+      {bookMutation.isError && (
+        <p className="rounded-xl border border-destructive/30 bg-destructive/10 p-3 text-center text-sm text-destructive">
+          {getErrorMessage(bookMutation.error)}
+        </p>
       )}
 
       <Button

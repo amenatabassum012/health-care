@@ -198,10 +198,22 @@ export default function NearbyHealthcare({
       return;
     }
 
+    const destinationLabel = [
+      facility.name,
+      facility.address,
+    ]
+      .filter(Boolean)
+      .join(", ");
+
+    const destinationQuery = encodeURIComponent(
+      destinationLabel ||
+        `${facility.latitude},${facility.longitude}`
+    );
+
     const url =
       `https://www.google.com/maps/dir/?api=1` +
       `&origin=${latitude},${longitude}` +
-      `&destination=${facility.latitude},${facility.longitude}`;
+      `&destination=${destinationQuery}`;
 
     window.open(
       url,

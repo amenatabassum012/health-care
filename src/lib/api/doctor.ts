@@ -24,6 +24,8 @@ function mapAppointment(row: any): Appointment {
     bookedForName: row.booked_for_name ?? undefined,
     bookedForRelation: row.booked_for_relation ?? undefined,
     cancellationReason: row.cancellation_reason ?? undefined,
+    wantsAsha: row.wants_asha ?? false,
+    ashaWorkerId: row.asha_worker_id ?? undefined,
   };
 }
 
@@ -62,6 +64,7 @@ function mapStaff(row: any): StaffUser {
     availability: row.availability ?? undefined,
     rating: row.rating ?? undefined,
     ratingCount: row.rating_count ?? undefined,
+    bio: row.bio ?? undefined,
   } as StaffUser;
 }
 
@@ -76,7 +79,7 @@ function mapStaff(row: any): StaffUser {
 // and logs straight in as one of the seeded mock staff accounts below.
 // Facility code -> 000000
 // Staff ID / mobile -> one of:
-//   staff-001 / 9876500011  -> Dr. Anjali Mehra (Verified, Specialist)
+//   staff-001 / 9876500011  -> Dr. Durru Shehvar (Verified, Specialist)
 //   staff-002 / 9876500022  -> Dr. Rohit Sharma (Verified, Doctor)
 //   staff-005 / 9876500055  -> Meena Rawat (Verified, FacilityAdmin)
 //   staff-003 / 9876500033  -> Priya Nautiyal (Pending — to demo the verification block)
@@ -119,6 +122,71 @@ export async function registerStaff(
   }
 
   return mapStaff(data);
+}
+
+/* =========================================================
+   ABDM HPR VERIFICATION
+   ========================================================= */
+
+export interface HprVerificationResult {
+  verificationStatus: "verified" | "failed" | "unavailable";
+  hprId: string;
+  verifiedName?: string;
+  verifiedQualification?: string;
+  verifiedSpecialization?: string;
+  verifiedFacility?: string;
+  errorMessage?: string;
+}
+
+function mapHprVerification(row: any): HprVerificationResult {
+  return {
+    verificationStatus: row.verification_status,
+    hprId: row.hpr_id,
+    verifiedName: row.verified_name ?? undefined,
+    verifiedQualification: row.verified_qualification ?? undefined,
+    verifiedSpecialization: row.verified_specialization ?? undefined,
+    verifiedFacility: row.verified_facility ?? undefined,
+    errorMessage: row.error_message ?? undefined,
+  };
+}
+
+// Best-effort: verifies a doctor's ABDM HPR ID via the verify-hpr Edge Function.
+// Never throws — if ABDM is unreachable or credentials aren't configured yet,
+// resolves to { verificationStatus: "unavailable" } so callers can proceed with
+// the existing manual admin-verification flow instead of blocking registration.
+export async function verifyHpr(staffId: string, hprId: string): Promise<HprVerificationResult> {
+  try {
+    const { data, error } = await supabase.functions.invoke("verify-hpr", {
+      body: { staffId, hprId },
+    });
+    if (error) throw error;
+    return mapHprVerification(data);
+  } catch (err) {
+    return {
+      verificationStatus: "unavailable",
+      hprId,
+      errorMessage: err instanceof Error ? err.message : "ABDM verification unavailable",
+    };
+  }
+}
+
+export async function getHprVerification(staffId: string): Promise<HprVerificationResult | null> {
+  const { data, error } = await supabase
+    .from("doctors")
+    .select()
+    .eq("staff_id", staffId)
+    .maybeSingle();
+  if (error || !data) return null;
+  return mapHprVerification(data);
+}
+
+export async function getHprVerifications(
+  staffIds: string[],
+): Promise<Record<string, HprVerificationResult>> {
+  if (staffIds.length === 0) return {};
+  const { data, error } = await supabase.from("doctors").select().in("staff_id", staffIds);
+  if (error || !data) return {};
+  return Object.fromEntries(data.map((row: any) => [row.staff_id, mapHprVerification(row)]));
 }
 
 /* =========================================================
@@ -315,6 +383,31 @@ export async function addQualification(
     .from("staff")
     .update({ qualifications })
     .eq("id", input.staffId)
+    .select()
+    .single();
+
+  if (error) throw error;
+  return mapStaff(data);
+}
+
+export interface StaffProfileUpdate {
+  bio?: string;
+  consultationFeeInr?: number;
+  availability?: string;
+}
+
+export async function updateStaffProfile(
+  staffId: string,
+  update: StaffProfileUpdate,
+): Promise<StaffUser> {
+  const { data, error } = await supabase
+    .from("staff")
+    .update({
+      ...(update.bio !== undefined ? { bio: update.bio } : {}),
+      ...(update.consultationFeeInr !== undefined ? { consultation_fee_inr: update.consultationFeeInr } : {}),
+      ...(update.availability !== undefined ? { availability: update.availability } : {}),
+    })
+    .eq("id", staffId)
     .select()
     .single();
 

@@ -2,14 +2,14 @@ import { useState } from "react"
 import { useTranslation } from "react-i18next"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
-import { FileCheck2, ShieldCheck, ShieldX } from "lucide-react"
+import { BadgeCheck, FileCheck2, ShieldAlert, ShieldCheck, ShieldX } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { EmptyState } from "@/components/shared/EmptyState"
 import { AllCaughtUp } from "@/components/illustrations/AllCaughtUp"
 import { CertificateViewButton } from "@/components/shared/CertificateViewButton"
-import { approveStaff, getPendingStaff, rejectStaff } from "@/lib/api/doctor"
+import { approveStaff, getHprVerifications, getPendingStaff, rejectStaff } from "@/lib/api/doctor"
 import { getSpecialties } from "@/lib/api/shared"
 import { useSession } from "@/state/session"
 import type { StaffUser } from "@/types"
@@ -27,6 +27,12 @@ export function AdminVerificationPage() {
     enabled: !!staff,
   })
   const { data: specialties } = useQuery({ queryKey: ["specialties"], queryFn: getSpecialties })
+  const pendingIds = pending?.map((s) => s.id) ?? []
+  const { data: hprVerifications } = useQuery({
+    queryKey: ["hpr-verifications", pendingIds],
+    queryFn: () => getHprVerifications(pendingIds),
+    enabled: pendingIds.length > 0,
+  })
 
   const approveMutation = useMutation({
     mutationFn: approveStaff,
@@ -56,9 +62,24 @@ export function AdminVerificationPage() {
       <div className="grid gap-4 sm:grid-cols-2">
         {pending?.map((s) => {
           const specialty = specialties?.find((sp) => sp.id === s.specialtyId)
+          const hpr = hprVerifications?.[s.id]
           return (
             <div key={s.id} className="rounded-2xl border border-warning/30 bg-warning/5 p-5">
-              <p className="text-base font-bold text-foreground">{s.name}</p>
+              <div className="flex items-start justify-between gap-2">
+                <p className="text-base font-bold text-foreground">{s.name}</p>
+                {hpr?.verificationStatus === "verified" && (
+                  <span className="flex shrink-0 items-center gap-1 rounded-full bg-success/15 px-2 py-0.5 text-[11px] font-semibold text-success">
+                    <BadgeCheck className="size-3" />
+                    {t("doctor.admin.hprVerified")}
+                  </span>
+                )}
+                {hpr?.verificationStatus === "failed" && (
+                  <span className="flex shrink-0 items-center gap-1 rounded-full bg-coral/15 px-2 py-0.5 text-[11px] font-semibold text-coral">
+                    <ShieldAlert className="size-3" />
+                    {t("doctor.admin.hprFailed")}
+                  </span>
+                )}
+              </div>
               <p className="text-xs text-muted-foreground">
                 {s.role}{specialty ? ` · ${specialty.label}` : ""}
               </p>

@@ -3,17 +3,17 @@ import type { StaffUser } from "@/types"
 export const MOCK_STAFF: StaffUser[] = [
   {
     id: "staff-001",
-    name: "Dr. Anjali Mehra",
+    name: "Dr. Durru Shehvar",
     phone: "9876500011",
-    email: "anjali.mehra@example.in",
+    email: "durru.shehvar@example.in",
     role: "Specialist",
     specialtyId: "spec-gynae",
     facilityId: "fac-dh-001",
-    nmcRegistrationNo: "UK-MCI-44210",
+    nmcRegistrationNo: "TS-MCI-44210",
     verificationStatus: "Verified",
     qualifications: [
-      { id: "qual-001", degree: "MBBS", institution: "AIIMS Rishikesh", year: "2010" },
-      { id: "qual-002", degree: "MD — Gynaecology & Obstetrics", institution: "AIIMS Delhi", year: "2014", fileName: "md_gynae_certificate.pdf" },
+      { id: "qual-001", degree: "MBBS", institution: "Osmania Medical College, Hyderabad", year: "2010" },
+      { id: "qual-002", degree: "MD — Gynaecology & Obstetrics", institution: "Osmania Medical College, Hyderabad", year: "2014", fileName: "md_gynae_certificate.pdf" },
     ],
     consultationFeeInr: 200,
     availability: "Mon–Sat, 10:00 AM – 4:00 PM",
