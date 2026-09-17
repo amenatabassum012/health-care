@@ -61,7 +61,11 @@ export function ASHADashboard() {
       { data: recent },
       { data: dueToday },
     ] = await Promise.all([
-      supabase.from("patients").select("*", { count: "exact", head: true }),
+      supabase
+  .from("asha_patient_assignments")
+  .select("*", { count: "exact", head: true })
+  .eq("asha_id", "asha-001")
+  .eq("status", "Active"),
       supabase.from("follow_ups").select("*", { count: "exact", head: true }).eq("status", "Pending"),
       supabase.from("patients").select("*", { count: "exact", head: true }).eq("priority", "High"),
       supabase.from("patients").select("*").order("created_at", { ascending: false }).limit(4),
@@ -110,6 +114,8 @@ export function ASHADashboard() {
 
   useRealtimeRefresh("patients", load)
   useRealtimeRefresh("follow_ups", load)
+  useRealtimeRefresh("asha_patient_assignments", load)
+  useRealtimeRefresh("asha_workers", load)
 
   return (
     <div className="space-y-8">
@@ -119,13 +125,29 @@ export function ASHADashboard() {
       =================================================== */}
 
       <div>
+  {(() => {
+    const currentHour = new Date().getHours();
+
+    const greeting =
+      currentHour < 12
+        ? "Good Morning"
+        : currentHour < 17
+        ? "Good Afternoon"
+        : "Good Evening";
+
+    return (
+      <>
         <h1 className="text-2xl font-bold text-foreground">
-          Good Morning, ASHA Worker 👋
+          {greeting}, ASHA Worker 👋
         </h1>
+
         <p className="mt-1 text-sm text-muted-foreground">
           Here is today's healthcare overview.
         </p>
-      </div>
+      </>
+    );
+  })()}
+</div>
 
 
       {/* ===================================================
