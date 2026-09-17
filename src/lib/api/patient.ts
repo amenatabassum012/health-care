@@ -31,6 +31,8 @@ function mapAppointment(row: any): Appointment {
     bookedForName: row.booked_for_name ?? undefined,
     bookedForRelation: row.booked_for_relation ?? undefined,
     cancellationReason: row.cancellation_reason ?? undefined,
+    wantsAsha: row.wants_asha ?? false,
+    ashaWorkerId: row.asha_worker_id ?? undefined,
   }
 }
 
@@ -68,9 +70,8 @@ function mapHealthRecord(row: any): HealthRecordEntry {
 // Normalizes whatever the login form passes in (raw 10-digit number or
 // already-prefixed) to the "+91XXXXXXXXXX" form TEST_OTP_NUMBERS and stored
 // phone numbers use, so demo numbers actually match.
-function normalizePhone(phone: string): string {
+export function normalizePhone(phone: string): string {
   const digits = phone.replace(/\D/g, "")
-  if (phone.trim().startsWith("+")) return phone.trim()
   return `+91${digits.slice(-10)}`
 }
 
@@ -94,6 +95,14 @@ export async function requestOtp(phoneInput: string) {
   console.log(`OTP for ${phone}: ${code}`)
 
   return { phone, requestId: `otp-${Date.now()}`, demoCode: code }
+}
+
+function computeAgeFromDob(dob: string | null | undefined): number | null {
+  if (!dob) return null
+  const birth = new Date(dob)
+  if (Number.isNaN(birth.getTime())) return null
+  const age = Math.floor((Date.now() - birth.getTime()) / (1000 * 60 * 60 * 24 * 365.25))
+  return age > 0 ? age : null
 }
 
 async function upsertPatientForPhone(phone: string, base: Patient): Promise<Patient> {
@@ -123,6 +132,7 @@ async function upsertPatientForPhone(phone: string, base: Patient): Promise<Pati
       name: base.name,
       phone,
       dob: base.dob ?? null,
+      age: computeAgeFromDob(base.dob),
       gender: base.gender ?? null,
       preferred_language: base.preferredLanguage,
       is_guardian_managed: base.isGuardianManaged,
@@ -221,7 +231,8 @@ export async function createAppointment(
   facilityId: string,
   type: Appointment["type"],
   doctorId?: string,
-  bookedFor?: { name: string; relation: Appointment["bookedForRelation"] }
+  bookedFor?: { name: string; relation: Appointment["bookedForRelation"] },
+  wantsAsha?: boolean
 ): Promise<Appointment> {
   const { data, error } = await supabase
     .from("appointments")
@@ -237,6 +248,7 @@ export async function createAppointment(
       status: "InQueue",
       booked_for_name: bookedFor?.name ?? null,
       booked_for_relation: bookedFor?.relation ?? null,
+      wants_asha: wantsAsha ?? false,
     })
     .select()
     .single()

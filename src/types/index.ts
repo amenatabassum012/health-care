@@ -58,6 +58,7 @@ export interface StaffUser {
   availability?: string
   rating?: number
   ratingCount?: number
+  bio?: string
 }
 
 export interface Patient {
@@ -105,6 +106,16 @@ export interface Appointment {
   bookedForName?: string
   bookedForRelation?: DependentRelation
   cancellationReason?: string
+  wantsAsha: boolean
+  ashaWorkerId?: string
+}
+
+export interface CaseMessage {
+  id: string
+  appointmentId: string
+  senderStaffId: string
+  body: string
+  createdAt: string
 }
 
 export type ConsultationMode = "Video" | "Audio" | "Callback"

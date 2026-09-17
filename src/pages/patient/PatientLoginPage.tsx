@@ -7,7 +7,7 @@ import { BrandMark } from "@/components/shared/BrandMark"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { requestOtp, verifyOtp } from "@/lib/api/patient"
+import { requestOtp, verifyOtp, normalizePhone } from "@/lib/api/patient"
 import { useSession } from "@/state/session"
 
 function getErrorMessage(error: unknown, fallback: string): string {
@@ -30,7 +30,7 @@ export function PatientLoginPage() {
   const [busy, setBusy] = useState(false)
 
   async function handleSendOtp() {
-    if (phone.replace(/\D/g, "").length < 10) {
+    if (normalizePhone(phone).length !== 13) {
       toast.error(t("patient.login.phonePlaceholder"))
       return
     }
@@ -129,7 +129,7 @@ export function PatientLoginPage() {
             </span>
             <h1 className="mt-3 text-xl font-bold text-foreground">{t("patient.login.otpLabel")}</h1>
             <p className="mt-1 text-sm text-muted-foreground">
-              {t("patient.login.otpSentTo")} +91 {phone}
+              {t("patient.login.otpSentTo")} {normalizePhone(phone)}
             </p>
 
             <Input

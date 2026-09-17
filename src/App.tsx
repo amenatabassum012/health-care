@@ -208,6 +208,12 @@ const ASHAHighRisk = lazy(() =>
   })),
 );
 
+const ASHARequestsPage = lazy(() =>
+  import("@/pages/asha/ASHARequestsPage").then((m) => ({
+    default: m.default,
+  })),
+);
+
 const ASHARegisterPatient = lazy(() =>
   import("@/pages/asha/ASHARegisterPatient").then((m) => ({
     default: m.default,
@@ -448,6 +454,11 @@ export function App() {
               <Route
                 path="/asha/high-risk"
                 element={<ASHAHighRisk />}
+              />
+
+              <Route
+                path="/asha/requests"
+                element={<ASHARequestsPage />}
               />
 
               <Route

@@ -1,10 +1,12 @@
+import { useState } from "react"
 import { useTranslation } from "react-i18next"
 import { useQuery } from "@tanstack/react-query"
 import { Link } from "react-router-dom"
-import { ArrowRight, CalendarClock, MapPin, Users, Video } from "lucide-react"
+import { ArrowRight, CalendarClock, HeartHandshake, MapPin, MessageCircle, Users, Video } from "lucide-react"
 import { EmptyState } from "@/components/shared/EmptyState"
 import { AllCaughtUp } from "@/components/illustrations/AllCaughtUp"
 import { StatusBadge, type StatusTone } from "@/components/shared/StatusBadge"
+import { CaseChatPanel } from "@/components/shared/CaseChatPanel"
 import { getDoctorAppointments, getReferralsMadeByDoctor } from "@/lib/api/doctor"
 import { getFacilities, getStaff } from "@/lib/api/shared"
 import { useSession } from "@/state/session"
@@ -46,6 +48,7 @@ export function MyPatientsPage() {
     queryFn: () => getReferralsMadeByDoctor(staff!.id),
     enabled: !!staff,
   })
+  const [chatAppointmentId, setChatAppointmentId] = useState<string | null>(null)
 
   const todayStart = startOfDay(new Date())
   const tomorrowStart = new Date(todayStart)
@@ -120,6 +123,26 @@ export function MyPatientsPage() {
           <p className="mt-2 text-sm font-medium text-teal-dark">
             {t("patient.home.statusQueue")} #{appointment.queuePosition}
           </p>
+        )}
+        {appointment.ashaWorkerId && (
+          <div className="mt-3 flex items-center justify-between gap-2 rounded-xl bg-mint/60 px-3 py-2">
+            <span className="flex items-center gap-1.5 text-xs font-semibold text-teal-dark">
+              <HeartHandshake className="size-3.5" />
+              ASHA: {staffDirectory?.find((s) => s.id === appointment.ashaWorkerId)?.name ?? appointment.ashaWorkerId}
+            </span>
+            <button
+              type="button"
+              onClick={(e) => {
+                e.preventDefault()
+                e.stopPropagation()
+                setChatAppointmentId(appointment.id)
+              }}
+              className="flex shrink-0 items-center gap-1 rounded-lg border border-teal/40 bg-background px-2 py-1 text-xs font-semibold text-teal hover:bg-mint"
+            >
+              <MessageCircle className="size-3.5" />
+              Message
+            </button>
+          </div>
         )}
       </div>
     )
@@ -198,6 +221,16 @@ export function MyPatientsPage() {
           </p>
         )}
       </div>
+
+      {chatAppointmentId && staff && (
+        <CaseChatPanel
+          open={!!chatAppointmentId}
+          onOpenChange={(open) => !open && setChatAppointmentId(null)}
+          appointmentId={chatAppointmentId}
+          currentStaffId={staff.id}
+          title="Message ASHA worker"
+        />
+      )}
     </div>
   )
 }

@@ -15,45 +15,24 @@ export interface HealthcareFacility {
 }
 
 /* =========================================================
-   DEMO HEALTHCARE FACILITIES
-   These are temporary testing locations.
-   Replace with real facilities later.
+   FACILITY TIER -> DISPLAY TYPE MAPPING
+   public.facilities uses FacilityTier ("SubCentre" | "PHC" |
+   "RuralHospital" | "DistrictHospital"); the nearby-healthcare
+   UI displays the simpler "PHC" | "CHC" | "Hospital".
 ========================================================= */
 
-const DEMO_FACILITIES: HealthcareFacility[] = [
-  {
-    id: "demo-phc-1",
-    name: "Rampur Primary Health Centre",
-    facility_type: "PHC",
-    village: "Rampur Village",
-    address: "Rampur",
-    phone: "040-12345678",
-    latitude: 17.3600,
-    longitude: 78.4750,
-  },
-
-  {
-    id: "demo-chc-1",
-    name: "Lakshmipur Community Health Centre",
-    facility_type: "CHC",
-    village: "Lakshmipur",
-    address: "Lakshmipur",
-    phone: "040-12345679",
-    latitude: 17.3700,
-    longitude: 78.4850,
-  },
-
-  {
-    id: "demo-hospital-1",
-    name: "District Hospital",
-    facility_type: "Hospital",
-    village: "District Centre",
-    address: "District Hospital Road",
-    phone: "040-12345680",
-    latitude: 17.4000,
-    longitude: 78.5000,
-  },
-]
+function mapTierToFacilityType(
+  tier: string
+): HealthcareFacility["facility_type"] {
+  switch (tier) {
+    case "PHC":
+      return "PHC"
+    case "SubCentre":
+      return "CHC"
+    default:
+      return "Hospital"
+  }
+}
 
 /* =========================================================
    SAVE USER LOCATION
@@ -129,17 +108,29 @@ export async function stopLocationSharing(
 export async function getHealthcareFacilities(): Promise<
   HealthcareFacility[]
 > {
-  /*
-    Temporary demo mode.
+  const { data, error } = await supabase
+    .from("facilities")
+    .select("id, name, tier, district, address, phone, latitude, longitude")
+    .not("latitude", "is", null)
+    .not("longitude", "is", null)
 
-    We are intentionally not querying
-    healthcare_facilities from Supabase right now
-    because that table is not available through
-    the current Supabase Data API.
+  if (error) {
+    console.error(
+      "Error loading healthcare facilities:",
+      error
+    )
 
-    The location system can therefore be tested
-    without depending on that table.
-  */
+    throw error
+  }
 
-  return DEMO_FACILITIES
+  return (data ?? []).map((row) => ({
+    id: row.id,
+    name: row.name,
+    facility_type: mapTierToFacilityType(row.tier),
+    village: row.district ?? null,
+    address: row.address ?? null,
+    phone: row.phone ?? null,
+    latitude: row.latitude,
+    longitude: row.longitude,
+  }))
 }
