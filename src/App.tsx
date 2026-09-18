@@ -111,6 +111,16 @@ const SosPage = lazy(() =>
 );
 
 /* =========================================================
+   REALTIME PATIENT DASHBOARD
+========================================================= */
+
+const PatientDashboard = lazy(() =>
+  import("@/pages/PatientDashboard").then((m) => ({
+    default: m.default,
+  })),
+);
+
+/* =========================================================
    DOCTOR / STAFF
 ========================================================= */
 
@@ -343,6 +353,12 @@ export function App() {
               <Route
                 path="/patient/sos"
                 element={<SosPage />}
+              />
+
+              {/* REALTIME PATIENT DASHBOARD */}
+              <Route
+                path="/patient-dashboard"
+                element={<PatientDashboard />}
               />
 
             </Route>
