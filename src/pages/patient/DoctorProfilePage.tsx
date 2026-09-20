@@ -1,4 +1,4 @@
-import { useNavigate, useParams } from "react-router-dom"
+import { useLocation, useNavigate, useParams } from "react-router-dom"
 import { useTranslation } from "react-i18next"
 import { useQuery } from "@tanstack/react-query"
 import {
@@ -37,6 +37,7 @@ export function DoctorProfilePage() {
   const { doctorId } = useParams()
   const { t } = useTranslation()
   const navigate = useNavigate()
+  const location = useLocation()
 
   const { data: doctor } = useQuery({
     queryKey: ["staff-profile", doctorId],
@@ -51,10 +52,21 @@ export function DoctorProfilePage() {
     enabled: !!doctorId,
   })
 
+  // This page is usually opened in a new tab (BookingPage "View profile"), where there is
+  // no history to go back to: close the tab, or fall back to the booking page.
+  const handleBack = () => {
+    if (location.key !== "default") {
+      navigate(-1)
+      return
+    }
+    window.close()
+    navigate("/patient/booking", { replace: true })
+  }
+
   const backButton = (
     <button
       type="button"
-      onClick={() => navigate(-1)}
+      onClick={handleBack}
       className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
     >
       <ArrowLeft className="size-4" />
