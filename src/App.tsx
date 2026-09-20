@@ -117,6 +117,16 @@ const PatientProfilePage = lazy(() =>
 );
 
 /* =========================================================
+   REALTIME PATIENT DASHBOARD
+========================================================= */
+
+const PatientDashboard = lazy(() =>
+  import("@/pages/PatientDashboard").then((m) => ({
+    default: m.default,
+  })),
+);
+
+/* =========================================================
    DOCTOR / STAFF
 ========================================================= */
 
@@ -354,6 +364,12 @@ export function App() {
               <Route
                 path="/patient/profile"
                 element={<PatientProfilePage />}
+              />
+
+              {/* REALTIME PATIENT DASHBOARD */}
+              <Route
+                path="/patient-dashboard"
+                element={<PatientDashboard />}
               />
 
             </Route>
