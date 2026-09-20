@@ -110,6 +110,12 @@ const SosPage = lazy(() =>
   })),
 );
 
+const PatientProfilePage = lazy(() =>
+  import("@/pages/patient/PatientProfilePage").then((m) => ({
+    default: m.PatientProfilePage,
+  })),
+);
+
 /* =========================================================
    DOCTOR / STAFF
 ========================================================= */
@@ -343,6 +349,11 @@ export function App() {
               <Route
                 path="/patient/sos"
                 element={<SosPage />}
+              />
+
+              <Route
+                path="/patient/profile"
+                element={<PatientProfilePage />}
               />
 
             </Route>

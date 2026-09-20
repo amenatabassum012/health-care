@@ -3,7 +3,7 @@ import { useNavigate, useParams } from "react-router-dom"
 import { useTranslation } from "react-i18next"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
-import { CheckCircle2, GitBranch, Plus, Search, Stethoscope, Trash2, X } from "lucide-react"
+import { CheckCircle2, ClipboardList, FlaskConical, GitBranch, Plus, Search, Stethoscope, Trash2, User, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/select"
 import { StatusBadge, type StatusTone } from "@/components/shared/StatusBadge"
 import { getFacilities, getSpecialties, getStaff } from "@/lib/api/shared"
-import { getHealthRecords, searchStock } from "@/lib/api/patient"
+import { getHealthRecords, getPatientProfile, searchStock } from "@/lib/api/patient"
 import { completeConsultation, createReferral, getDoctorQueue } from "@/lib/api/doctor"
 import { useSession } from "@/state/session"
 import type { PrescriptionItem, ReferralUrgency } from "@/types"
@@ -39,6 +39,9 @@ export function ConsultationPage() {
 
   const [diagnosisQuery, setDiagnosisQuery] = useState("")
   const [diagnoses, setDiagnoses] = useState<string[]>([])
+  const [notes, setNotes] = useState("")
+  const [labTests, setLabTests] = useState<string[]>([])
+  const [labTestQuery, setLabTestQuery] = useState("")
   const [prescription, setPrescription] = useState<PrescriptionItem[]>([])
   const [showReferral, setShowReferral] = useState(false)
   const [refSpecialty, setRefSpecialty] = useState<string | undefined>()
@@ -70,8 +73,24 @@ export function ConsultationPage() {
     enabled: !!currentPatient,
   })
 
+  const { data: patientProfile } = useQuery({
+    queryKey: ["patient-profile", currentPatient?.patientId],
+    queryFn: () => getPatientProfile(currentPatient!.patientId),
+    enabled: !!currentPatient,
+  })
+
+  const currentFacility = facilities?.find((f) => f.id === staff?.facilityId)
+
   const completeMutation = useMutation({
-    mutationFn: () => completeConsultation(currentPatient!),
+    mutationFn: () =>
+      completeConsultation({
+        appointment: currentPatient!,
+        facilityId: staff!.facilityId,
+        facilityName: currentFacility?.name,
+        diagnoses,
+        notes,
+        labTests,
+      }),
     onSuccess: () => {
       toast.success(t("doctor.consultation.consultationSaved"))
       queryClient.invalidateQueries({ queryKey: ["doctor-queue"] })
@@ -112,6 +131,16 @@ export function ConsultationPage() {
     setPrescription((p) => p.filter((_, idx) => idx !== i))
   }
 
+  function addLabTest() {
+    const value = labTestQuery.trim()
+    if (!value || labTests.includes(value)) return
+    setLabTests((tests) => [...tests, value])
+    setLabTestQuery("")
+  }
+  function removeLabTest(test: string) {
+    setLabTests((tests) => tests.filter((t) => t !== test))
+  }
+
   function submitReferral() {
     if (!refSpecialty || !refFacility || !staff) {
       toast.error(t("doctor.consultation.referral"))
@@ -136,6 +165,45 @@ export function ConsultationPage() {
         <div>
           <h1 className="text-xl font-bold text-foreground">{t("doctor.consultation.title")}</h1>
           <p className="text-xs text-muted-foreground">{t("doctor.consultation.appointmentLabel", { id: appointmentId })}</p>
+        </div>
+
+        <div className="rounded-2xl border border-border bg-card p-5">
+          <Label className="mb-3 flex items-center gap-1.5">
+            <User className="size-3.5" />
+            {t("doctor.consultation.patientDetails")}
+          </Label>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div>
+              <p className="text-[11px] uppercase tracking-wide text-muted-foreground">{t("patient.profile.name")}</p>
+              <p className="text-sm font-medium text-foreground">
+                {currentPatient?.patientName ?? t("doctor.consultation.unknownPatient")}
+              </p>
+            </div>
+            <div>
+              <p className="text-[11px] uppercase tracking-wide text-muted-foreground">{t("doctor.consultation.age")}</p>
+              <p className="text-sm font-medium text-foreground">
+                {patientProfile?.age ?? t("doctor.consultation.notProvided")}
+              </p>
+            </div>
+            <div>
+              <p className="text-[11px] uppercase tracking-wide text-muted-foreground">{t("doctor.consultation.gender")}</p>
+              <p className="text-sm font-medium text-foreground">
+                {patientProfile?.gender ?? t("doctor.consultation.notProvided")}
+              </p>
+            </div>
+            <div>
+              <p className="text-[11px] uppercase tracking-wide text-muted-foreground">{t("doctor.consultation.contact")}</p>
+              <p className="text-sm font-medium text-foreground">
+                {patientProfile?.phone ?? t("doctor.consultation.notProvided")}
+              </p>
+            </div>
+            <div className="sm:col-span-2">
+              <p className="text-[11px] uppercase tracking-wide text-muted-foreground">{t("doctor.consultation.symptoms")}</p>
+              <p className="text-sm font-medium text-foreground">
+                {patientProfile?.symptoms || t("doctor.consultation.notProvided")}
+              </p>
+            </div>
+          </div>
         </div>
 
         <div className="rounded-2xl border border-border bg-card p-5">
@@ -177,6 +245,58 @@ export function ConsultationPage() {
                 </span>
               ))}
             </div>
+          )}
+        </div>
+
+        <div className="rounded-2xl border border-border bg-card p-5">
+          <Label className="mb-2 flex items-center gap-1.5">
+            <ClipboardList className="size-3.5" />
+            {t("doctor.consultation.notes")}
+          </Label>
+          <Textarea
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            rows={4}
+            placeholder={t("doctor.consultation.notesPlaceholder")}
+          />
+        </div>
+
+        <div className="rounded-2xl border border-border bg-card p-5">
+          <Label className="mb-3 flex items-center gap-1.5">
+            <FlaskConical className="size-3.5" />
+            {t("doctor.consultation.labTests")}
+          </Label>
+          <div className="flex gap-2">
+            <Input
+              value={labTestQuery}
+              onChange={(e) => setLabTestQuery(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault()
+                  addLabTest()
+                }
+              }}
+              placeholder={t("doctor.consultation.testPlaceholder")}
+              className="h-10"
+            />
+            <Button variant="outline" size="sm" onClick={addLabTest}>
+              <Plus className="size-3.5" />
+              {t("doctor.consultation.addTest")}
+            </Button>
+          </div>
+          {labTests.length > 0 ? (
+            <div className="mt-3 flex flex-wrap gap-2">
+              {labTests.map((test) => (
+                <span key={test} className="flex items-center gap-1.5 rounded-full bg-mint px-3 py-1.5 text-xs font-medium text-teal-dark">
+                  {test}
+                  <button type="button" onClick={() => removeLabTest(test)}>
+                    <X className="size-3" />
+                  </button>
+                </span>
+              ))}
+            </div>
+          ) : (
+            <p className="mt-2 text-xs text-muted-foreground">{t("doctor.consultation.noTestsYet")}</p>
           )}
         </div>
 

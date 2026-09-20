@@ -1,6 +1,6 @@
 import { Link, Outlet, useLocation, useNavigate } from "react-router-dom"
 import { useTranslation } from "react-i18next"
-import { CalendarCheck, FileClock, GitBranch, Home, LogOut } from "lucide-react"
+import { CalendarCheck, FileClock, GitBranch, Home, LogOut, UserRound } from "lucide-react"
 import { BrandMark } from "@/components/shared/BrandMark"
 import { LanguageToggle } from "@/components/shared/LanguageToggle"
 import { OfflineBanner } from "@/components/shared/OfflineBanner"
@@ -38,6 +38,13 @@ export function PatientLayout() {
           </Link>
           <div className="flex items-center gap-2">
             <LanguageToggle className="h-9 w-[110px] border-none bg-muted text-sm" />
+            <Link
+              to="/patient/profile"
+              aria-label={t("patient.profile.title")}
+              className="flex size-9 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted"
+            >
+              <UserRound className="size-4" />
+            </Link>
             <button
               type="button"
               aria-label={t("nav.logout")}

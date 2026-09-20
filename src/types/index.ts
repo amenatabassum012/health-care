@@ -66,7 +66,9 @@ export interface Patient {
   name: string
   phone: string
   dob?: string
+  age?: number
   gender?: "Male" | "Female" | "Other"
+  symptoms?: string
   preferredLanguage: string
   isGuardianManaged: boolean
   abhaId?: string

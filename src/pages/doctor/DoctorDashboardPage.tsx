@@ -32,7 +32,7 @@ import {
 import { useSession } from "@/state/session"
 import type { TriageUrgency } from "@/types"
 
-import NearbyHealthcare from "@/components/location/NearbyHealthcare"
+import ReferralFacilities from "@/components/location/ReferralFacilities"
 
 
 /* =========================================================
@@ -164,14 +164,15 @@ export function DoctorDashboardPage() {
 
 
       {/* ===================================================
-          LOCATION & NEARBY HEALTHCARE
+          REFERRAL FACILITIES
 
-          Uses the same shared location system as Patient.
+          Nearest facilities from the doctor's own facility,
+          filterable by specialty — for deciding where to
+          refer a patient.
       =================================================== */}
 
-      <NearbyHealthcare
-        role="doctor"
-        userId={null}
+      <ReferralFacilities
+        facilityId={staff?.facilityId}
       />
 
 

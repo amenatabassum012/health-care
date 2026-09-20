@@ -1,5 +1,5 @@
 import { useTranslation } from "react-i18next"
-import { useQuery } from "@tanstack/react-query"
+import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { Link } from "react-router-dom"
 
 import {
@@ -18,18 +18,27 @@ import { ActionCard } from "@/components/shared/ActionCard"
 import { StatusBadge } from "@/components/shared/StatusBadge"
 import { getHomeSummary } from "@/lib/api/patient"
 import { useSession } from "@/state/session"
+import { useRealtimeRefresh } from "@/hooks/useRealtimeRefresh"
 
 import NearbyHealthcare from "@/components/location/NearbyHealthcare"
 
 export function PatientHomePage() {
   const { t } = useTranslation()
   const { patient } = useSession()
+  const queryClient = useQueryClient()
 
   const { data } = useQuery({
     queryKey: ["home-summary", patient?.id],
     queryFn: () => getHomeSummary(patient!.id),
     enabled: !!patient?.id,
   })
+
+  // Not filtered to this patient's own row: another patient ahead in the
+  // same facility queue being seen/cancelled changes this patient's live
+  // position too, so any appointment change should trigger a refetch.
+  useRealtimeRefresh("appointments", () =>
+    queryClient.invalidateQueries({ queryKey: ["home-summary", patient?.id] })
+  )
 
   return (
     <div className="space-y-6">

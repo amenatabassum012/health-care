@@ -17,6 +17,14 @@ const TEST_OTP_NUMBERS: Record<string, string> = {
   "+919777777777": "123456",
 }
 
+// Gives each demo/test number its own seeded name so bookings made while
+// testing with different numbers don't all show up as the same patient.
+const TEST_OTP_NAMES: Record<string, string> = {
+  "+919999999999": "Suman Devi",
+  "+919888888888": "Anita Kumari",
+  "+919777777777": "Radha Sharma",
+}
+
 function mapAppointment(row: any): Appointment {
   return {
     id: row.id,
@@ -118,7 +126,9 @@ async function upsertPatientForPhone(phone: string, base: Patient): Promise<Pati
       name: existing.name,
       phone: existing.phone,
       dob: existing.dob ?? undefined,
+      age: existing.age ?? undefined,
       gender: existing.gender ?? undefined,
+      symptoms: existing.symptoms ?? undefined,
       preferredLanguage: existing.preferred_language ?? base.preferredLanguage,
       isGuardianManaged: existing.is_guardian_managed ?? false,
       abhaId: existing.abha_id ?? undefined,
@@ -148,7 +158,9 @@ async function upsertPatientForPhone(phone: string, base: Patient): Promise<Pati
     name: data.name,
     phone: data.phone,
     dob: data.dob ?? undefined,
+    age: data.age ?? undefined,
     gender: data.gender ?? undefined,
+    symptoms: data.symptoms ?? undefined,
     preferredLanguage: data.preferred_language ?? base.preferredLanguage,
     isGuardianManaged: data.is_guardian_managed ?? false,
     abhaId: data.abha_id ?? undefined,
@@ -160,7 +172,8 @@ export async function verifyOtp(phoneInput: string, code: string): Promise<Patie
   const testCode = TEST_OTP_NUMBERS[phone]
   if (testCode) {
     if (code !== testCode) throw new Error('Invalid or expired OTP')
-    return upsertPatientForPhone(phone, { ...MOCK_PATIENT, id: `pat-${phone}`, phone })
+    const name = TEST_OTP_NAMES[phone] ?? MOCK_PATIENT.name
+    return upsertPatientForPhone(phone, { ...MOCK_PATIENT, id: `pat-${phone}`, phone, name })
   }
 
   const { data, error } = await supabase
@@ -181,26 +194,69 @@ export async function verifyOtp(phoneInput: string, code: string): Promise<Patie
   return upsertPatientForPhone(phone, { ...MOCK_PATIENT, id: `pat-${phone}`, phone })
 }
 
+// Recomputes an InQueue appointment's real position/wait from the current
+// queue snapshot instead of trusting the number frozen at booking time, so
+// the count goes down as patients ahead get seen, skipped, or cancel.
+async function computeLiveQueueInfo(
+  appointment: Pick<Appointment, "id" | "facilityId" | "status">
+): Promise<{ queuePosition: number; estimatedWaitMinutes: number } | null> {
+  if (appointment.status !== "InQueue" || !appointment.facilityId) return null
+
+  const { data, error } = await supabase
+    .from("appointments")
+    .select("id, created_at")
+    .eq("facility_id", appointment.facilityId)
+    .eq("status", "InQueue")
+    .order("created_at", { ascending: true })
+
+  if (error) {
+    // Never let a live-position lookup failure blank out the whole
+    // appointment/home summary — fall back to whatever was already stored.
+    console.error("computeLiveQueueInfo failed", error)
+    return null
+  }
+
+  const position = (data ?? []).findIndex((row: any) => row.id === appointment.id)
+  if (position === -1) return null
+
+  return { queuePosition: position + 1, estimatedWaitMinutes: (position + 1) * 10 }
+}
+
+const ONE_DAY_MS = 24 * 60 * 60 * 1000
+
 export async function getHomeSummary(patientId: string) {
-  const [{ data: appointments }, { data: referrals }] = await Promise.all([
-    supabase
-      .from("appointments")
-      .select("*")
-      .eq("patient_id", patientId)
-      .in("status", ["Booked", "InQueue", "InProgress"])
-      .order("slot_time", { ascending: true })
-      .limit(1),
-    supabase
-      .from("referrals")
-      .select("*")
-      .eq("patient_id", patientId)
-      .neq("status", "Completed")
-      .order("created_at", { ascending: false })
-      .limit(1),
-  ])
+  const oneDayAgo = new Date(Date.now() - ONE_DAY_MS).toISOString()
+
+  const [{ data: appointments, error: appointmentsError }, { data: referrals, error: referralsError }] =
+    await Promise.all([
+      supabase
+        .from("appointments")
+        .select("*")
+        .eq("patient_id", patientId)
+        .in("status", ["Booked", "InQueue", "InProgress"])
+        .gte("created_at", oneDayAgo)
+        .order("created_at", { ascending: false })
+        .limit(1),
+      supabase
+        .from("referrals")
+        .select("*")
+        .eq("patient_id", patientId)
+        .neq("status", "Completed")
+        .order("created_at", { ascending: false })
+        .limit(1),
+    ])
+
+  if (appointmentsError) throw appointmentsError
+  if (referralsError) throw referralsError
+
+  let activeAppointment = appointments?.[0] ? mapAppointment(appointments[0]) : undefined
+  if (activeAppointment) {
+    const live = await computeLiveQueueInfo(activeAppointment)
+    if (live) activeAppointment = { ...activeAppointment, ...live }
+  }
 
   return {
-    activeAppointment: appointments?.[0] ? mapAppointment(appointments[0]) : undefined,
+    activeAppointment,
     latestReferral: referrals?.[0] ? mapReferral(referrals[0]) : undefined,
     dueFollowUp: undefined,
   }
@@ -243,8 +299,6 @@ export async function createAppointment(
       doctor_id: doctorId ?? null,
       type,
       slot_time: new Date(Date.now() + 45 * 60 * 1000).toISOString(),
-      queue_position: Math.floor(Math.random() * 6) + 2,
-      estimated_wait_minutes: Math.floor(Math.random() * 40) + 10,
       status: "InQueue",
       booked_for_name: bookedFor?.name ?? null,
       booked_for_relation: bookedFor?.relation ?? null,
@@ -254,7 +308,9 @@ export async function createAppointment(
     .single()
 
   if (error) throw error
-  return mapAppointment(data)
+  const appointment = mapAppointment(data)
+  const live = await computeLiveQueueInfo(appointment)
+  return live ? { ...appointment, ...live } : appointment
 }
 
 export async function getAppointments(patientId: string) {
@@ -265,7 +321,14 @@ export async function getAppointments(patientId: string) {
     .order("slot_time", { ascending: false })
 
   if (error) throw error
-  return (data ?? []).map(mapAppointment)
+  const appointments = (data ?? []).map(mapAppointment)
+
+  return Promise.all(
+    appointments.map(async (appointment) => {
+      const live = await computeLiveQueueInfo(appointment)
+      return live ? { ...appointment, ...live } : appointment
+    })
+  )
 }
 
 export async function cancelAppointment(appointmentId: string, reason: string): Promise<Appointment> {
@@ -329,6 +392,68 @@ export async function getFeedbackForAppointment(appointmentId: string) {
     rating: data.rating,
     comment: data.comment ?? undefined,
     createdAt: data.created_at,
+  }
+}
+
+export async function getPatientProfile(patientId: string): Promise<Patient> {
+  const { data, error } = await supabase
+    .from("patients")
+    .select("*")
+    .eq("id", patientId)
+    .single()
+
+  if (error) throw error
+  return {
+    id: data.id,
+    name: data.name,
+    phone: data.phone,
+    dob: data.dob ?? undefined,
+    age: data.age ?? undefined,
+    gender: data.gender ?? undefined,
+    symptoms: data.symptoms ?? undefined,
+    preferredLanguage: data.preferred_language,
+    isGuardianManaged: data.is_guardian_managed ?? false,
+    abhaId: data.abha_id ?? undefined,
+  }
+}
+
+export interface UpdatePatientProfileInput {
+  name?: string
+  age?: number
+  gender?: "Male" | "Female" | "Other"
+  phone?: string
+  symptoms?: string
+}
+
+export async function updatePatientProfile(
+  patientId: string,
+  input: UpdatePatientProfileInput
+): Promise<Patient> {
+  const { data, error } = await supabase
+    .from("patients")
+    .update({
+      ...(input.name !== undefined && { name: input.name }),
+      ...(input.age !== undefined && { age: input.age }),
+      ...(input.gender !== undefined && { gender: input.gender }),
+      ...(input.phone !== undefined && { phone: input.phone }),
+      ...(input.symptoms !== undefined && { symptoms: input.symptoms }),
+    })
+    .eq("id", patientId)
+    .select()
+    .single()
+
+  if (error) throw error
+  return {
+    id: data.id,
+    name: data.name,
+    phone: data.phone,
+    dob: data.dob ?? undefined,
+    age: data.age ?? undefined,
+    gender: data.gender ?? undefined,
+    symptoms: data.symptoms ?? undefined,
+    preferredLanguage: data.preferred_language,
+    isGuardianManaged: data.is_guardian_managed ?? false,
+    abhaId: data.abha_id ?? undefined,
   }
 }
 

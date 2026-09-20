@@ -299,12 +299,13 @@ export async function getDoctorQueue(facilityId: string) {
     .select("*, patients(name)")
     .eq("facility_id", facilityId)
     .in("status", ["InQueue", "InProgress"])
-    .order("queue_position", { ascending: true });
+    .order("created_at", { ascending: true });
 
   if (error) throw error;
 
-  return (data ?? []).map((row: any) => ({
+  return (data ?? []).map((row: any, index: number) => ({
     ...mapAppointment(row),
+    queuePosition: index + 1,
     patientName: row.patients?.name ?? row.patient_id,
     urgency: (row.status === "InProgress" ? "Teleconsult" : "InPerson") as TriageUrgency,
   }));
@@ -314,9 +315,20 @@ export async function getDoctorQueue(facilityId: string) {
    COMPLETE CONSULTATION
    ========================================================= */
 
+export interface CompleteConsultationInput {
+  appointment: Appointment;
+  facilityId: string;
+  facilityName?: string;
+  diagnoses: string[];
+  notes: string;
+  labTests: string[];
+}
+
 export async function completeConsultation(
-  appointment: Appointment,
+  input: CompleteConsultationInput,
 ): Promise<Appointment> {
+  const { appointment, facilityId, facilityName, diagnoses, notes, labTests } = input;
+
   const { data, error } = await supabase
     .from("appointments")
     .update({ status: "Completed" })
@@ -325,6 +337,24 @@ export async function completeConsultation(
     .single();
 
   if (error) throw error;
+
+  const summaryParts: string[] = [];
+  if (notes.trim()) summaryParts.push(`Notes: ${notes.trim()}`);
+  if (labTests.length) summaryParts.push(`Recommended tests: ${labTests.join(", ")}`);
+
+  if (diagnoses.length || summaryParts.length) {
+    await supabase.from("health_records").insert({
+      id: `hr-${Date.now()}`,
+      patient_id: appointment.patientId,
+      facility_id: facilityId,
+      facility_name: facilityName ?? null,
+      type: "Consultation",
+      title: diagnoses.length ? diagnoses.join(", ") : "Consultation",
+      summary: summaryParts.join(" · "),
+      date: new Date().toISOString().slice(0, 10),
+    });
+  }
+
   return mapAppointment(data);
 }
 

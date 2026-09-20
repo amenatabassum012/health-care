@@ -1,6 +1,6 @@
 import { useState } from "react"
 import { useTranslation } from "react-i18next"
-import { useMutation, useQuery } from "@tanstack/react-query"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { CalendarClock, Clock, ExternalLink, HeartHandshake, Hospital, MapPin, Star, Users, Video } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -110,6 +110,7 @@ function DoctorOption({
 export function BookingPage() {
   const { t } = useTranslation()
   const { patient } = useSession()
+  const queryClient = useQueryClient()
   const [type, setType] = useState<AppointmentType>("InPerson")
   const [facilityId, setFacilityId] = useState<string | null>(null)
   const [doctorId, setDoctorId] = useState<string | null>(null)
@@ -140,6 +141,10 @@ export function BookingPage() {
           : undefined,
         wantsAsha
       ),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["appointments", patient?.id] })
+      queryClient.invalidateQueries({ queryKey: ["home-summary", patient?.id] })
+    },
   })
 
   if (bookMutation.isSuccess) {
